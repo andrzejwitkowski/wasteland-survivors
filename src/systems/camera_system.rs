@@ -30,7 +30,7 @@ pub fn camera_controller(
     if let Ok(player_transform) = player_query.single() {
         for mut camera_transform in camera_query.iter_mut() {
             // Simple follow logic: set camera position relative to player
-            camera_transform.translation = player_transform.translation + Vec3::new(0.0, 5.0, 10.0);
+            camera_transform.translation = player_transform.translation + Vec3::new(0.0, 50.0, 10.0);
             camera_transform.look_at(player_transform.translation, Vec3::Y);
         }
     }
