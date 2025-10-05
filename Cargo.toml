@@ -1,0 +1,19 @@
+[package]
+name = "wasteland-survivors"
+version = "0.1.0"
+edition = "2024"
+authors = ["andrzej.witkowski@gmail.com"]
+description = "A game built with the Bevy engine where players defend against invaders in a post-apocalyptic wasteland."
+license = "MIT"
+repository = "https://github.com/andrzejwitkowski/wasteland-survivors"
+readme = "README.md"
+keywords = ["bevy", "gamedev", "wasteland", "survivors"]
+categories = ["game-development", "game-engines"]
+
+[dependencies]
+bevy = { version = "0.17.1"}
+
+[[bin]]
+name = "wasteland-survivors"
+path = "src/main.rs"
+
