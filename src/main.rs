@@ -10,6 +10,7 @@ use crate::plugins::{CameraPlugin, PlayerPlugin, TestPlanePlugin};
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
+        .add_plugins(MeshPickingPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(TestPlanePlugin)
         .add_plugins(CameraPlugin)
