@@ -5,7 +5,7 @@ mod plugins;
 use bevy::prelude::*;
 use bevy::app::App;
 
-use crate::plugins::{CameraPlugin, PlayerPlugin, TestPlanePlugin};
+use crate::plugins::{CameraPlugin, PlayerPlugin, TestPlanePlugin, TileSelectionPlugin};
 
 fn main() {
     App::new()
@@ -14,5 +14,6 @@ fn main() {
         .add_plugins(PlayerPlugin)
         .add_plugins(TestPlanePlugin)
         .add_plugins(CameraPlugin)
+        .add_plugins(TileSelectionPlugin)
         .run();
 }

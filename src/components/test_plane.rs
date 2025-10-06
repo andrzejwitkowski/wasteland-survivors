@@ -20,6 +20,11 @@ pub struct Tile{
     pub hovered_color: Color,
 }
 
+#[derive(Message)]
+pub struct TileSelectedEvent {
+    pub tile_entity: Entity
+}
+
 impl Default for TestPlane {
     fn default() -> Self {
         Self {

@@ -11,6 +11,18 @@ pub struct Player {
 #[derive(Component)]
 pub struct PlayerModel;
 
+#[derive(Message)]
+pub struct PlayerMoveRequestEvent {
+    pub target_position: Vec3,
+}
+
+/// Marker component for player movement state
+#[derive(Component)]
+pub struct MovingToTarget {
+    pub target_position: Vec3,
+    pub speed: f32,
+}
+
 // Optional: Component for debugging with gizmos
 #[derive(Component)]
 pub struct DebugGizmo {
