@@ -1,7 +1,9 @@
 use bevy::prelude::*;
 
 #[derive(Component, Clone, Copy)]
-pub struct TestPlane {
+pub struct PlaneChunk {
+    pub x: i32,
+    pub z: i32,
     pub width: i32,
     pub height: i32,
     pub color: Color,
@@ -25,9 +27,11 @@ pub struct TileSelectedEvent {
     pub tile_entity: Entity
 }
 
-impl Default for TestPlane {
+impl Default for PlaneChunk {
     fn default() -> Self {
         Self {
+            x: 0,
+            z: 0,
             width: 30,
             height: 30,
             color: Color::srgb(0.0, 1.0, 0.0),
