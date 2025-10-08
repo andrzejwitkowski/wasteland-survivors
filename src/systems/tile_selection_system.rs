@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::components::{Tile, TileSelectedEvent};
+use crate::{components::{Tile, TileSelectedEvent}, systems::plane_chunk_system::get_all_neighbors};
 
 /// Handles tile clicks and emits selection events
 pub fn handle_tile_selection(
@@ -13,6 +13,10 @@ pub fn handle_tile_selection(
             tile_selected_events.write(TileSelectedEvent {
                 tile_entity: event.entity,
             });
+
+            // Log neighbor entities
+            let neighbors = get_all_neighbors(event.entity, &tile_query);
+            info!("Tile neighbors: {:?}", neighbors);
         }
     }
 }

@@ -1,6 +1,5 @@
-use bevy::{asset::RenderAssetUsages, mesh::{Indices, PrimitiveTopology}, prelude::*, transform};
-use crate::components::{PlaneChunk, Tile};
-
+use bevy::{asset::RenderAssetUsages, mesh::{Indices, PrimitiveTopology}, prelude::*};
+use crate::components::{PlaneChunk, Tile, TileRegistry};
 
 /// Spawns a grid of plane chunks arranged in columns and rows
 /// 
@@ -65,35 +64,7 @@ pub fn spawn_single_chunk_grid(
         Transform::from_xyz(x_pos, 0.0, z_pos),
     );
     
-    info!("Spawned chunk at position ({}, {})", x_pos, z_pos);
-    
-    info!("Completed spawning {} chunks", num_cols * num_rows);
-}
-
-pub fn init_test_chunk(
-    commands: &mut Commands,
-    meshes: &mut ResMut<Assets<Mesh>>,
-    materials: &mut ResMut<Assets<StandardMaterial>>,
-) {
-    let test_plane = PlaneChunk::default();
-    let mesh = create_plane_chunk_mesh(&test_plane);
-    let transform = Transform::from_xyz(0.0, 0.0, 0.0);
-
-    commands.spawn((
-        Mesh3d(meshes.add(mesh)),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: test_plane.color,
-            perceptual_roughness: 1.0,
-            ..default()
-        })),
-        Transform::from_xyz(0.0, 0.0, 0.0),
-        test_plane,
-        Name::new("Test Plane"),
-    ));
-    info!("Test plane initialized");
-
-    spawn_tile_meshes(commands, meshes, materials, &test_plane, transform);
-    info!("Tile meshes spawned");
+    debug!("Spawned chunk at position ({}, {})", x_pos, z_pos);
 }
 
 fn create_plane_chunk_mesh(test_plane: &PlaneChunk) -> Mesh {
@@ -186,9 +157,6 @@ fn spawn_tile_meshes(
                 Tile { 
                     x: global_x, 
                     z: global_z,
-                    // chunk_coord,
-                    // local_x,
-                    // local_z,
                     ..default()
                 },
                 Name::new(format!("Tile ({}, {}) in Chunk ({}, {})", global_x, global_z, plane_chunk.x, plane_chunk.z)),
@@ -206,7 +174,7 @@ pub fn handle_chunk_clicks(
 
     for event in hover_in_events.read() {
         if let Ok(mut chunk) = chunk_query.get_mut(event.entity) {
-            info!("Hovered chunk: ({}, {})", chunk.x, chunk.z);
+            debug!("Hovered chunk: ({}, {})", chunk.x, chunk.z);
             chunk.selected = false;
             chunk.hovered = true;
         }
@@ -214,7 +182,7 @@ pub fn handle_chunk_clicks(
 
     for event in hover_out_events.read() {
         if let Ok(mut chunk) = chunk_query.get_mut(event.entity) {
-            info!("Unhovered chunk: ({}, {})", chunk.x, chunk.z);
+            debug!("Unhovered chunk: ({}, {})", chunk.x, chunk.z);
             chunk.hovered = false;
             chunk.selected = false;
         }
@@ -222,7 +190,7 @@ pub fn handle_chunk_clicks(
 
     for event in click_events.read() {
         if let Ok(mut chunk) = chunk_query.get_mut(event.entity) {
-            info!("Clicked chunk: ({}, {})", chunk.x, chunk.z);
+            debug!("Clicked chunk: ({}, {})", chunk.x, chunk.z);
             chunk.selected = true;
             chunk.hovered = false;
         }
@@ -283,4 +251,74 @@ fn draw_tile_borders(transform: &Transform, gizmos: &mut Gizmos, tile_width: i32
         center + Vec3::new(-half_width, 0.0, -half_height),
         color,
     );
+}
+
+pub fn build_tile_registry(
+    mut tile_registry: ResMut<TileRegistry>,
+    tile_query: Query<(Entity, &mut Tile)>,
+) {
+    tile_registry.tiles_by_coord.clear();
+    for (entity, tile) in tile_query.iter() {
+        tile_registry.tiles_by_coord.insert((tile.x, tile.z), entity);
+    }
+    info!("Built TileRegistry with {} tiles", tile_registry.tiles_by_coord.len());
+
+    calculate_tile_neighbors(&tile_registry, tile_query);
+}
+
+fn calculate_tile_neighbors(
+    tile_registry: &ResMut<TileRegistry>,
+    mut tile_query: Query<(Entity, &mut Tile)>,
+) {
+    let mut updated_count = 0;
+    for (_, mut tile) in tile_query.iter_mut() {
+        let old_neighbors = tile.neighbor_entities;
+        tile.neighbor_entities = calculate_neighbors_for_tile(&tile_registry, tile.x, tile.z);
+        if old_neighbors != tile.neighbor_entities {
+            updated_count += 1;
+        }
+    }
+    if updated_count > 0 {
+        debug!("Updated neighbors for {} tiles", updated_count);
+    }
+}
+
+/// Calculate neighbor entities for a specific tile coordinate
+fn calculate_neighbors_for_tile(
+    tile_registry: &TileRegistry,
+    x: i32,
+    z: i32,
+) -> [Option<Entity>; 8] {
+    let directions = [
+        (0, 1),   // N
+        (1, 1),   // NE
+        (1, 0),   // E
+        (1, -1),  // SE
+        (0, -1),  // S
+        (-1, -1), // SW
+        (-1, 0),  // W
+        (-1, 1),  // NW
+    ];
+    
+    let mut neighbors = [None; 8];
+    
+    for (i, (dx, dz)) in directions.iter().enumerate() {
+        let neighbor_coord = (x + dx, z + dz);
+        if let Some(&neighbor_entity) = tile_registry.tiles_by_coord.get(&neighbor_coord) {
+            neighbors[i] = Some(neighbor_entity);
+        }
+    }
+    
+    neighbors
+}
+
+pub fn get_all_neighbors(
+    tile_entity: Entity,
+    tile_query: &Query<&Tile>,
+) -> Vec<Entity> {
+    if let Ok(tile) = tile_query.get(tile_entity) {
+        let neighbors: Vec<Entity> = tile.neighbor_entities.iter().filter_map(|&e| e).collect();
+        return neighbors;
+    }
+    vec![]
 }

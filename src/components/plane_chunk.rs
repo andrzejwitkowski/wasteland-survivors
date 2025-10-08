@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 
 #[derive(Component, Clone, Copy)]
@@ -20,6 +22,12 @@ pub struct Tile{
     pub idle_color: Color,
     pub selected_color: Color,
     pub hovered_color: Color,
+    pub neighbor_entities: [Option<Entity>; 8], // Neighbor entities (N, NE, E, SE, S, SW, W, NW)
+}
+
+#[derive(Resource, Default)]
+pub struct TileRegistry {
+    pub tiles_by_coord: HashMap<(i32, i32), Entity>,
 }
 
 #[derive(Message)]
@@ -51,6 +59,7 @@ impl Default for Tile {
             idle_color: Color::srgb(0.0, 0.0, 0.0),
             selected_color: Color::srgb(1.0, 0.0, 0.0),
             hovered_color: Color::srgb(0.0, 1.0, 0.0),
+            neighbor_entities: [None; 8],
         }
     }
 }

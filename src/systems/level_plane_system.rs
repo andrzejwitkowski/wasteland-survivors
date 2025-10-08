@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use crate::{systems::plane_chunk_system::spawn_single_chunk_grid};
+use crate::systems::plane_chunk_system::{spawn_single_chunk_grid};
 
 pub struct LevelPlaneConfig {
     pub num_cols: i32,
@@ -61,9 +61,7 @@ pub fn spawn_chunk_grid(
     chunk_height: i32,
     grid_size: i32,
 ) {
-    info!("Spawning chunk grid: {}x{} chunks", num_cols, num_rows);
-    
-        info!("Spawning chunk grid: {}x{} chunks", num_cols, num_rows);
+    debug!("Spawning chunk grid: {}x{} chunks", num_cols, num_rows);
     
     for row in 0..num_rows {
         for col in 0..num_cols {
