@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use crate::components::{MovingToTarget, Player, PlayerMoveRequestEvent, Tile, TileSelectedEvent};
 use crate::components::movement::Node;
 
-pub fn plan_player_movement(
+pub fn tile_selected_event_handle(
     mut tile_selected_events: MessageReader<TileSelectedEvent>,
     player_query: Query<&Player>,
     mut player_move_events: MessageWriter<PlayerMoveRequestEvent>,
@@ -21,19 +21,24 @@ pub fn plan_player_movement(
     }
 }
 
-pub fn execute_player_movement(
+pub fn player_movement_request_handler(
     mut player_move_events: MessageReader<PlayerMoveRequestEvent>,
-    mut player_query: Query<(&mut Transform, &mut Player), Without<MovingToTarget>>,
+    mut player_query: Query<(Entity, &mut Transform, &mut Player)>,
     tiles: Query<(&Tile, &Transform), Without<Player>>,
     mut commands: Commands,
 ) {
     for event in player_move_events.read() {
-        if let Ok((mut transform, mut player)) = player_query.single_mut() {
+        if let Ok((player_entity, mut transform, mut player)) = player_query.single_mut() {
 
             // Perform A* pathfinding from source to target tile
             if let Some(path) = astar_pathfind(event.source_tile_entity, event.target_tile_entity, &tiles) {
 
                 info!("Path found with {} steps", path.len());
+                
+                commands.entity(player_entity).insert(MovingToTarget {
+                    path: path.clone(),
+                });
+
                 // Move player to the last tile in the path (the target)
                 if let Some(&last_tile_entity) = path.last() {
                     if let Ok((_, target_transform)) = tiles.get(last_tile_entity) {
@@ -46,16 +51,18 @@ pub fn execute_player_movement(
                 warn!("No path found from source to target tile");
                 continue;
             }
-
-            // Optionally, add a MovingToTarget component if you want to animate movement over time
-            // commands.entity(player).insert(MovingToTarget {
-            //     target_position: event.target_position,
-            //     speed: player.move_speed,
-            // });
         } else {
             warn!("No player found to execute movement");
         }
     }
+}
+
+pub fn move_along_path(
+    mut commands: Commands,
+    mut player_query: Query<(Entity, &mut Transform, &mut Player), With<MovingToTarget>>,
+    tiles: Query<(&Tile, &Transform), Without<Player>>,
+) {
+    // TODO: Implement movement logic here
 }
 
 fn heuristic(pos1: Vec3, pos2: Vec3) -> f32 {

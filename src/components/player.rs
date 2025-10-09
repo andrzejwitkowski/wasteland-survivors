@@ -19,8 +19,7 @@ pub struct PlayerMoveRequestEvent {
 /// Marker component for player movement state
 #[derive(Component)]
 pub struct MovingToTarget {
-    pub target_position: Vec3,
-    pub speed: f32,
+    pub path: Vec<Entity>,
 }
 
 // Optional: Component for debugging with gizmos
