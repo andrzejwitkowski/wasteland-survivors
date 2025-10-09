@@ -3,9 +3,8 @@ use bevy::prelude::*;
 #[derive(Component)]
 pub struct Player {
     pub speed: f32,
-    pub location: Vec3,
-    pub rotation: Quat,
     pub debug_gizmo: Option<DebugGizmo>,
+    pub tile_entity: Option<Entity>,
 }
 
 #[derive(Component)]
@@ -13,7 +12,8 @@ pub struct PlayerModel;
 
 #[derive(Message)]
 pub struct PlayerMoveRequestEvent {
-    pub target_position: Vec3,
+    pub source_tile_entity: Entity,
+    pub target_tile_entity: Entity,
 }
 
 /// Marker component for player movement state
@@ -43,9 +43,8 @@ impl Default for Player {
     fn default() -> Self {
         Self {
             speed: 10.0,
-            location: Vec3::ZERO,
-            rotation: Quat::IDENTITY,
             debug_gizmo: None,
+            tile_entity: None,
         }
     }
 }

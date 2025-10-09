@@ -32,7 +32,8 @@ pub struct TileRegistry {
 
 #[derive(Message)]
 pub struct TileSelectedEvent {
-    pub tile_entity: Entity
+    pub source_tile_entity: Entity,
+    pub target_tile_entity: Entity
 }
 
 impl Default for PlaneChunk {
@@ -53,7 +54,7 @@ impl Default for Tile {
         Self {
             x: 0,
             z: 0,
-            walkable: false,
+            walkable: true,
             selected: false,
             hovered: false,
             idle_color: Color::srgb(0.0, 0.0, 0.0),
