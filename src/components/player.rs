@@ -42,7 +42,7 @@ impl Default for DebugGizmo {
 impl Default for Player {
     fn default() -> Self {
         Self {
-            speed: 10.0,
+            speed: 7.0,
             debug_gizmo: None,
             tile_entity: None,
 

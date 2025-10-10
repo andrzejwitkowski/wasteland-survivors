@@ -1,6 +1,8 @@
 use bevy::prelude::*;
-use crate::{components::TileSelectedEvent, systems::{player_movement_system::tile_selected_event_handle, tile_selection_system::handle_tile_selection}};
+use crate::{components::TileSelectedEvent, systems::{tile_selection_system::handle_tile_selection}};
 
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub struct InputSet;
 pub struct TileSelectionPlugin;
 
 impl Plugin for TileSelectionPlugin {
@@ -8,7 +10,7 @@ impl Plugin for TileSelectionPlugin {
         app.add_message::<TileSelectedEvent>()
             .add_systems(
                 Update,
-                handle_tile_selection.before(tile_selected_event_handle)
+                handle_tile_selection.in_set(InputSet)
             );
     }
 }

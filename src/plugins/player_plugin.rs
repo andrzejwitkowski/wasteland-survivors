@@ -2,6 +2,13 @@ use bevy::prelude::*;
 
 use crate::{components::PlayerMoveRequestEvent, systems::{draw_player_system::{draw_player, init_player}, player_movement_system::{player_movement_request_handler, tile_selected_event_handle, update_player_movement}}};
 
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+pub enum PlayerSystemSet {
+    Input,
+    Movement,
+    Update,
+}
+
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -10,12 +17,21 @@ impl Plugin for PlayerPlugin {
             .add_systems(Startup, init_player)
             .add_systems(Update, draw_player)
             .add_message::<PlayerMoveRequestEvent>()
+            .configure_sets(
+                Update,
+                (
+                    crate::plugins::tile_selection_plugin::InputSet,
+                    PlayerSystemSet::Input.after(crate::plugins::tile_selection_plugin::InputSet),
+                    PlayerSystemSet::Movement.after(PlayerSystemSet::Input),
+                    PlayerSystemSet::Update.after(PlayerSystemSet::Movement),
+                )
+            )
             .add_systems(
                 Update,
                 (
-                    tile_selected_event_handle,
-                    player_movement_request_handler.after(tile_selected_event_handle),
-                    update_player_movement.after(player_movement_request_handler),
+                    tile_selected_event_handle.in_set(PlayerSystemSet::Input),
+                    player_movement_request_handler.in_set(PlayerSystemSet::Movement),
+                    update_player_movement.in_set(PlayerSystemSet::Update),
                 )
             );
     }
