@@ -11,7 +11,7 @@ keywords = ["bevy", "gamedev", "wasteland", "survivors"]
 categories = ["game-development", "game-engines"]
 
 [dependencies]
-bevy = { version = "0.17.1"}
+bevy = { version = "0.17.1", features = ["jpeg"]}
 
 [[bin]]
 name = "wasteland-survivors"

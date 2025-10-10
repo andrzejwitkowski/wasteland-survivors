@@ -1,5 +1,5 @@
 use bevy::{asset::RenderAssetUsages, mesh::{Indices, PrimitiveTopology}, prelude::*};
-use crate::components::{PlaneChunk, Tile, TileRegistry};
+use crate::{components::{PlaneChunk, Tile, TileRegistry}, materials::pavement};
 
 /// Spawns a grid of plane chunks arranged in columns and rows
 /// 
@@ -13,6 +13,7 @@ pub fn spawn_single_chunk_grid(
     commands: &mut Commands,
     meshes: &mut ResMut<Assets<Mesh>>,
     materials: &mut ResMut<Assets<StandardMaterial>>,
+    pavement_materials: &mut ResMut<pavement::CheckedFloorMaterials>,
     col: i32,
     row: i32,
     num_cols: i32,
@@ -43,17 +44,18 @@ pub fn spawn_single_chunk_grid(
     };
     
     // Spawn the chunk entity
-    let chunk_entity = commands.spawn((
+    commands.spawn((
         Mesh3d(meshes.add(create_plane_chunk_mesh(&plane_chunk))),
-        MeshMaterial3d(materials.add(StandardMaterial {
-            base_color: plane_chunk.color,
-            perceptual_roughness: 1.0,
-            ..default()
-        })),
+        // MeshMaterial3d(materials.add(StandardMaterial {
+        //     base_color: plane_chunk.color,
+        //     perceptual_roughness: 1.0,
+        //     ..default()
+        // })),
+        MeshMaterial3d(pavement_materials.material.clone()),
         Transform::from_xyz(x_pos, 0.0, z_pos),
         plane_chunk,
         Name::new(format!("Plane Chunk ({}, {})", col, row)),
-    )).id();
+    ));
     
     // Spawn tiles for this chunk
     spawn_tile_meshes(
@@ -87,7 +89,7 @@ fn create_plane_chunk_mesh(test_plane: &PlaneChunk) -> Mesh {
             
             vertices.push([x_pos, 0.0, z_pos]);
             normals.push([0.0, 1.0, 0.0]);
-            uvs.push([u * 10.0, v * 10.0]); // Scale UVs for better texture mapping
+            uvs.push([u * 1.0, v * 1.0]); // Scale UVs for better texture mapping
         }
     }
     
@@ -310,15 +312,4 @@ fn calculate_neighbors_for_tile(
     }
     
     neighbors
-}
-
-pub fn get_all_neighbors(
-    tile_entity: Entity,
-    tile_query: &Query<&Tile>,
-) -> Vec<Entity> {
-    if let Ok(tile) = tile_query.get(tile_entity) {
-        let neighbors: Vec<Entity> = tile.neighbor_entities.iter().filter_map(|&e| e).collect();
-        return neighbors;
-    }
-    vec![]
 }

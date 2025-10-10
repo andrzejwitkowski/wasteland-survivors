@@ -1,12 +1,11 @@
 use bevy::prelude::*;
-use crate::systems::plane_chunk_system::{spawn_single_chunk_grid};
+use crate::{materials::pavement, systems::plane_chunk_system::spawn_single_chunk_grid};
 
 pub struct LevelPlaneConfig {
     pub num_cols: i32,
     pub num_rows: i32,
     pub chunk_width: i32,
     pub chunk_height: i32,
-    pub color: Color,
     pub grid_size: i32,
 }
 
@@ -17,7 +16,6 @@ impl Default for LevelPlaneConfig {
             num_rows: 3,
             chunk_width: 30,
             chunk_height: 30,
-            color: Color::srgb(0.0, 1.0, 0.0),
             grid_size: 10,
         }
     }
@@ -27,6 +25,7 @@ pub fn spawn_default_chunk_grid(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<StandardMaterial>>,
+    mut pavement_materials: ResMut<pavement::CheckedFloorMaterials>,
 ) {
 
     let level_plane_config = LevelPlaneConfig::default();
@@ -35,6 +34,7 @@ pub fn spawn_default_chunk_grid(
         &mut commands,
         &mut meshes,
         &mut materials,
+        &mut pavement_materials,
         level_plane_config.num_cols,
         level_plane_config.num_rows,
         level_plane_config.chunk_width,
@@ -55,6 +55,7 @@ pub fn spawn_chunk_grid(
     mut commands: &mut Commands,
     mut meshes: &mut ResMut<Assets<Mesh>>,
     mut materials: &mut ResMut<Assets<StandardMaterial>>,
+    mut pavement_materials: &mut ResMut<pavement::CheckedFloorMaterials>,
     num_cols: i32,
     num_rows: i32,
     chunk_width: i32,
@@ -70,6 +71,7 @@ pub fn spawn_chunk_grid(
                 &mut commands,
                 &mut meshes,
                 &mut materials,
+                &mut pavement_materials,
                 col,
                 row,
                 num_cols,
