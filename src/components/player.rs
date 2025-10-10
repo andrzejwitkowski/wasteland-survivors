@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -5,6 +7,11 @@ pub struct Player {
     pub speed: f32,
     pub debug_gizmo: Option<DebugGizmo>,
     pub tile_entity: Option<Entity>,
+
+    pub target_transform: Option<Transform>, // Current movement target
+    pub path: VecDeque<Entity>,
+    pub segment_start: Vec3, 
+    pub translation_progress: f32, // 0.0 to 1.0
 }
 
 #[derive(Component)]
@@ -14,12 +21,6 @@ pub struct PlayerModel;
 pub struct PlayerMoveRequestEvent {
     pub source_tile_entity: Entity,
     pub target_tile_entity: Entity,
-}
-
-/// Marker component for player movement state
-#[derive(Component)]
-pub struct MovingToTarget {
-    pub path: Vec<Entity>,
 }
 
 // Optional: Component for debugging with gizmos
@@ -44,6 +45,11 @@ impl Default for Player {
             speed: 10.0,
             debug_gizmo: None,
             tile_entity: None,
+
+            target_transform: None,
+            path: VecDeque::new(),
+            segment_start: Vec3::ZERO,
+            translation_progress: 0.0,
         }
     }
 }

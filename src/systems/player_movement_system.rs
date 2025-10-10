@@ -1,7 +1,7 @@
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 
 use bevy::prelude::*;
-use crate::components::{MovingToTarget, Player, PlayerMoveRequestEvent, Tile, TileSelectedEvent};
+use crate::components::{Player, PlayerMoveRequestEvent, Tile, TileSelectedEvent};
 use crate::components::movement::Node;
 
 pub fn tile_selected_event_handle(
@@ -23,29 +23,24 @@ pub fn tile_selected_event_handle(
 
 pub fn player_movement_request_handler(
     mut player_move_events: MessageReader<PlayerMoveRequestEvent>,
-    mut player_query: Query<(Entity, &mut Transform, &mut Player)>,
-    tiles: Query<(&Tile, &Transform), Without<Player>>,
-    mut commands: Commands,
+    mut player_query: Query<(&mut Transform, &mut Player)>,
+    tiles: Query<(&Tile, &Transform), Without<Player>>
 ) {
     for event in player_move_events.read() {
-        if let Ok((player_entity, mut transform, mut player)) = player_query.single_mut() {
+        if let Ok((transform, mut player)) = player_query.single_mut() {
+
+            if player.tile_entity.is_none() {
+                player.tile_entity = Some(event.source_tile_entity);
+            }
 
             // Perform A* pathfinding from source to target tile
             if let Some(path) = astar_pathfind(event.source_tile_entity, event.target_tile_entity, &tiles) {
 
                 info!("Path found with {} steps", path.len());
                 
-                commands.entity(player_entity).insert(MovingToTarget {
-                    path: path.clone(),
-                });
-
-                // Move player to the last tile in the path (the target)
-                if let Some(&last_tile_entity) = path.last() {
-                    if let Ok((_, target_transform)) = tiles.get(last_tile_entity) {
-                        transform.translation = target_transform.translation;
-                        player.tile_entity = Some(last_tile_entity);
-                    }
-                }
+                player.path = VecDeque::from(path); 
+                player.segment_start = transform.translation;
+                player.translation_progress = 0.0;
                 
             } else {
                 warn!("No path found from source to target tile");
@@ -57,12 +52,50 @@ pub fn player_movement_request_handler(
     }
 }
 
-pub fn move_along_path(
-    mut commands: Commands,
-    mut player_query: Query<(Entity, &mut Transform, &mut Player), With<MovingToTarget>>,
-    tiles: Query<(&Tile, &Transform), Without<Player>>,
+pub fn update_player_movement(
+    mut query: Query<(&mut Transform, &mut Player)>,
+    transforms: Query<&Transform, Without<Player>>,
+    time: Res<Time>,
 ) {
-    // TODO: Implement movement logic here
+    for (mut transform, mut player) in &mut query {
+        // 1. If target is None and list is not empty, pop first element
+        if player.target_transform.is_none() && !player.path.is_empty() {
+            if let Some(next_entity) = player.path.pop_front() {
+                if let Ok(target) = transforms.get(next_entity) {
+                    player.segment_start = transform.translation; // ✅ Save current position
+                    player.target_transform = Some(*target);
+                    player.translation_progress = 0.0;
+                    player.tile_entity = Some(next_entity); // Update current tile
+                }
+            }
+        }
+        
+        // 2. Check if translation_progress >= 1.0
+        if player.translation_progress >= 1.0 {
+            // Set target to None (will pop next element on next frame)
+            player.target_transform = None;
+            continue;
+        }
+        
+        // 3. Move toward target
+        if let Some(target) = player.target_transform {
+            player.translation_progress += time.delta_secs() * player.speed;
+            player.translation_progress = player.translation_progress.min(1.0);
+            
+            // ✅ Lerp from segment_start to target
+            transform.translation = player.segment_start.lerp(
+                target.translation,
+                player.translation_progress
+            );
+            
+            // ✅ ROTATION: Face the target
+            let direction = target.translation - player.segment_start;
+            if direction.length_squared() > 0.001 {
+                // Look at target (assumes Y-up, character faces Z-forward)
+                transform.look_to(direction, Vec3::Y);
+            }
+        }
+    }
 }
 
 fn heuristic(pos1: Vec3, pos2: Vec3) -> f32 {
@@ -82,12 +115,10 @@ pub fn astar_pathfind(
     
     // Check if start and goal are walkable
     if !start_tile.walkable || !goal_tile.walkable {
-        info!("Start or goal tile is not walkable");
         return None;
     }
     
     if start == goal {
-        info!("Start and goal are the same tile");
         return Some(vec![start]);
     }
 
@@ -189,7 +220,6 @@ fn reconstruct_path(came_from: &HashMap<Entity, Entity>, mut current: Entity) ->
     while let Some(&previous) = came_from.get(&current) {
         current = previous;
         path.push(current);
-        info!("Current tile: {:?}", current);
     }
     
     path.reverse();
