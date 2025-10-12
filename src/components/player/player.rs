@@ -5,7 +5,6 @@ use bevy::prelude::*;
 #[derive(Component)]
 pub struct Player {
     pub speed: f32,
-    pub debug_gizmo: Option<DebugGizmo>,
     pub tile_entity: Option<Entity>,
 
     pub target_transform: Option<Transform>, // Current movement target
@@ -23,27 +22,10 @@ pub struct PlayerMoveRequestEvent {
     pub target_tile_entity: Entity,
 }
 
-// Optional: Component for debugging with gizmos
-#[derive(Component)]
-pub struct DebugGizmo {
-    pub color: Color,
-    pub size: f32,
-}
-
-impl Default for DebugGizmo {
-    fn default() -> Self {
-        Self {
-            color: Color::srgb(1.0, 0.0, 0.0), // Red color
-            size: 1.0,
-        }
-    }
-}
-
 impl Default for Player {
     fn default() -> Self {
         Self {
             speed: 7.0,
-            debug_gizmo: None,
             tile_entity: None,
 
             target_transform: None,
@@ -51,12 +33,5 @@ impl Default for Player {
             segment_start: Vec3::ZERO,
             translation_progress: 0.0,
         }
-    }
-}
-
-impl Player {
-    pub fn with_debug_gizmo(mut self, color: Color, size: f32) -> Self {
-        self.debug_gizmo = Some(DebugGizmo { color, size });
-        self
     }
 }

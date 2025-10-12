@@ -1,0 +1,41 @@
+{
+    "version": "0.2.0",
+    "configurations": [    
+        {
+            "name": "Debug (cppvsdbg, dev-fast)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/dev-fast/wasteland-survivors.exe",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": { "RUST_BACKTRACE": "1" },
+            "symbolSearchPath": "${workspaceFolder};${workspaceFolder}/target/dev-fast",
+            "justMyCode": false
+        }, 
+        {
+            "name": "Debug (direct, dev-fast)",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/target/dev-fast/wasteland-survivors.exe",
+            "cwd": "${workspaceFolder}",
+            "env": { "RUST_BACKTRACE": "1" },
+            "initCommands": [
+                "settings set target.max-children-count 200",
+                "settings set target.max-string-summary-length 4096",
+                "settings set target.process.thread.step-in-avoid-nodebug true"
+            ],
+            "sourceLanguages": ["rust"]
+        },
+        {
+            "name": "Debug unit tests in executable 'wasteland-survivors'",
+            "type": "lldb",
+            "request": "launch",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--bin=wasteland-survivors"
+                ]
+            }
+        }
+    ]
+}

@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use crate::components::{CameraController, Player};
+use crate::components::{CameraController};
+use crate::components::player::player::Player;
 
 #[derive(Component)]
 pub struct CameraFollow {

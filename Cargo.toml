@@ -17,3 +17,17 @@ bevy = { version = "0.17.1", features = ["jpeg"]}
 name = "wasteland-survivors"
 path = "src/main.rs"
 
+[profile.dev]     
+debug = true               # debuginfo on
+opt-level = 0              # pure debug stays as-is
+
+[profile.dev-fast]  
+inherits = "dev"           # inherit settings from dev
+debug = true               # keep symbols so breakpoints/locals work
+opt-level = 1              # or 2 for more speed; 1 is usually a sweet spot
+debug-assertions = false   # turn off expensive checks
+overflow-checks = false
+incremental = true
+codegen-units = 256        # speeds rebuilds
+lto = "off"
+

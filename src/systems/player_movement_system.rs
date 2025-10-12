@@ -1,7 +1,8 @@
 use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 
 use bevy::prelude::*;
-use crate::components::{Player, PlayerMoveRequestEvent, Tile, TileSelectedEvent};
+use crate::components::player::player::{Player, PlayerMoveRequestEvent};
+use crate::components::{Tile, TileSelectedEvent};
 use crate::components::movement::Node;
 
 pub fn tile_selected_event_handle(
