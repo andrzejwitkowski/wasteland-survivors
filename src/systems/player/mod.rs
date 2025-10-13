@@ -1,3 +1,3 @@
 pub mod gizmo_system;
-
-use gizmo_system::*;
+pub mod movement_system;
+pub mod player_system;

@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-use crate::systems::{camera_system::{camera_controller, init_camera}, draw_player_system::init_player};
+use crate::systems::{camera_system::{camera_controller, init_camera}, player::player_system::init_player};
 
 pub struct CameraPlugin;
 

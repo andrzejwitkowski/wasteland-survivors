@@ -1,0 +1,27 @@
+use bevy::prelude::*;
+use std::collections::VecDeque;
+
+#[derive(Component)]
+pub struct PlayerMovement {
+    pub target_transform: Option<Transform>, // Current movement target
+    pub path: VecDeque<Entity>,
+    pub segment_start: Vec3, 
+    pub translation_progress: f32,
+}
+
+#[derive(Message)]
+pub struct PlayerMoveRequestEvent {
+    pub source_tile_entity: Entity,
+    pub target_tile_entity: Entity,
+}
+
+impl Default for PlayerMovement {
+    fn default() -> Self {
+        Self {
+            target_transform: None,
+            path: VecDeque::new(),
+            segment_start: Vec3::ZERO,
+            translation_progress: 0.0,
+        }
+    }
+}

@@ -1,9 +1,20 @@
 use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
 
 use bevy::prelude::*;
-use crate::components::player::player::{Player, PlayerMoveRequestEvent};
+use crate::components::player::movement::{PlayerMoveRequestEvent, PlayerMovement};
+use crate::components::player::player::{Player};
 use crate::components::{Tile, TileSelectedEvent};
 use crate::components::movement::Node;
+
+pub fn init_player_movement(
+    mut commands: Commands,
+    player_query: Query<Entity, (With<Player>, Without<PlayerMovement>)>
+) {
+    if let Ok(player) = player_query.single() {
+        commands.entity(player).insert(PlayerMovement::default());
+        info!("Player movement initialized");
+    }
+}
 
 pub fn tile_selected_event_handle(
     mut tile_selected_events: MessageReader<TileSelectedEvent>,
@@ -24,11 +35,11 @@ pub fn tile_selected_event_handle(
 
 pub fn player_movement_request_handler(
     mut player_move_events: MessageReader<PlayerMoveRequestEvent>,
-    mut player_query: Query<(&mut Transform, &mut Player)>,
+    mut player_query: Query<(&mut Transform, &mut Player, &mut PlayerMovement)>,
     tiles: Query<(&Tile, &Transform), Without<Player>>
 ) {
     for event in player_move_events.read() {
-        if let Ok((transform, mut player)) = player_query.single_mut() {
+        if let Ok((transform, mut player, mut player_movement)) = player_query.single_mut() {
 
             if player.tile_entity.is_none() {
                 player.tile_entity = Some(event.source_tile_entity);
@@ -39,9 +50,9 @@ pub fn player_movement_request_handler(
 
                 info!("Path found with {} steps", path.len());
                 
-                player.path = VecDeque::from(path); 
-                player.segment_start = transform.translation;
-                player.translation_progress = 0.0;
+                player_movement.path = VecDeque::from(path); 
+                player_movement.segment_start = transform.translation;
+                player_movement.translation_progress = 0.0;
                 
             } else {
                 warn!("No path found from source to target tile");
@@ -54,43 +65,42 @@ pub fn player_movement_request_handler(
 }
 
 pub fn update_player_movement(
-    mut query: Query<(&mut Transform, &mut Player)>,
+    mut query: Query<(&mut Transform, &mut Player, &mut PlayerMovement)>,
     transforms: Query<&Transform, Without<Player>>,
     time: Res<Time>,
 ) {
-    for (mut transform, mut player) in &mut query {
-        // 1. If target is None and list is not empty, pop first element
-        if player.target_transform.is_none() && !player.path.is_empty() {
-            if let Some(next_entity) = player.path.pop_front() {
+    for (mut transform, mut player, mut player_movement) in &mut query {
+        if player_movement.target_transform.is_none() && !player_movement.path.is_empty() {
+            if let Some(next_entity) = player_movement.path.pop_front() {
                 if let Ok(target) = transforms.get(next_entity) {
-                    player.segment_start = transform.translation; // ✅ Save current position
-                    player.target_transform = Some(*target);
-                    player.translation_progress = 0.0;
+                    player_movement.segment_start = transform.translation; // ✅ Save current position
+                    player_movement.target_transform = Some(*target);
+                    player_movement.translation_progress = 0.0;
                     player.tile_entity = Some(next_entity); // Update current tile
                 }
             }
         }
         
         // 2. Check if translation_progress >= 1.0
-        if player.translation_progress >= 1.0 {
+        if player_movement.translation_progress >= 1.0 {
             // Set target to None (will pop next element on next frame)
-            player.target_transform = None;
+            player_movement.target_transform = None;
             continue;
         }
         
         // 3. Move toward target
-        if let Some(target) = player.target_transform {
-            player.translation_progress += time.delta_secs() * player.speed;
-            player.translation_progress = player.translation_progress.min(1.0);
+        if let Some(target) = player_movement.target_transform {
+            player_movement.translation_progress += time.delta_secs() * player.speed;
+            player_movement.translation_progress = player_movement.translation_progress.min(1.0);
             
             // ✅ Lerp from segment_start to target
-            transform.translation = player.segment_start.lerp(
+            transform.translation = player_movement.segment_start.lerp(
                 target.translation,
-                player.translation_progress
+                player_movement.translation_progress
             );
             
             // ✅ ROTATION: Face the target
-            let direction = target.translation - player.segment_start;
+            let direction = target.translation - player_movement.segment_start;
             if direction.length_squared() > 0.001 {
                 // Look at target (assumes Y-up, character faces Z-forward)
                 transform.look_to(direction, Vec3::Y);
