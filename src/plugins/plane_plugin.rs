@@ -17,7 +17,7 @@ impl Plugin for TestPlanePlugin {
                 build_tile_registry.after(spawn_default_chunk_grid),
             )
         );
-        app.add_systems(Update, draw_tiles_borders);
+        // app.add_systems(Update, draw_tiles_borders);
         app.add_systems(Update, handle_chunk_clicks);
     }
 }

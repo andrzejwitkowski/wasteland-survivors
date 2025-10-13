@@ -22,7 +22,7 @@ pub struct PlayerModel {
 impl Default for Player {
     fn default() -> Self {
         Self {
-            speed: 7.0,
+            speed: 10.0,
             tile_entity: None,
         }
     }

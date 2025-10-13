@@ -45,14 +45,28 @@ pub fn player_movement_request_handler(
                 player.tile_entity = Some(event.source_tile_entity);
             }
 
-            // Perform A* pathfinding from source to target tile
-            if let Some(path) = astar_pathfind(event.source_tile_entity, event.target_tile_entity, &tiles) {
+            if !player_movement.path.is_empty() {
+                if let Some(current_target) = player_movement.path.back() {
+                    if *current_target == event.target_tile_entity {
+                        info!("Already moving to this tile, ignoring duplicate click");
+                        continue;
+                    }
+                }
+                info!("Interrupting current path for new destination");
+            }
 
+            // Perform A* pathfinding from source to target tile
+            if let Some(path) = astar_pathfind(
+                event.source_tile_entity, 
+                event.target_tile_entity, 
+                &tiles
+            ) {
                 info!("Path found with {} steps", path.len());
                 
                 player_movement.path = VecDeque::from(path); 
                 player_movement.segment_start = transform.translation;
                 player_movement.translation_progress = 0.0;
+                player_movement.target_transform = None;
                 
             } else {
                 warn!("No path found from source to target tile");
@@ -77,6 +91,15 @@ pub fn update_player_movement(
                     player_movement.target_transform = Some(*target);
                     player_movement.translation_progress = 0.0;
                     player.tile_entity = Some(next_entity); // Update current tile
+
+                    player_movement.segment_distance = player_movement.segment_start.distance(target.translation);
+
+                    // ✅ ROTATION: Face the target
+                    let direction = target.translation - player_movement.segment_start;
+                    if direction.length_squared() > 0.001 {
+                        // Look at target (assumes Y-up, character faces Z-forward)
+                        transform.look_to(-direction.normalize(), Vec3::Y);
+                    }
                 }
             }
         }
@@ -90,21 +113,25 @@ pub fn update_player_movement(
         
         // 3. Move toward target
         if let Some(target) = player_movement.target_transform {
-            player_movement.translation_progress += time.delta_secs() * player.speed;
+
+            let movement_this_frame = player.speed * time.delta_secs();
+            let progress_increment = if player_movement.segment_distance > 0.0 {
+                movement_this_frame / player_movement.segment_distance
+            } else {
+                1.0 // Instant movement for zero distance
+            };
+            
+            player_movement.translation_progress += progress_increment;
             player_movement.translation_progress = player_movement.translation_progress.min(1.0);
+
+            // player_movement.translation_progress += time.delta_secs() * player.speed;
+            // player_movement.translation_progress = player_movement.translation_progress.min(1.0);
             
             // ✅ Lerp from segment_start to target
             transform.translation = player_movement.segment_start.lerp(
                 target.translation,
                 player_movement.translation_progress
             );
-            
-            // ✅ ROTATION: Face the target
-            let direction = target.translation - player_movement.segment_start;
-            if direction.length_squared() > 0.001 {
-                // Look at target (assumes Y-up, character faces Z-forward)
-                transform.look_to(direction, Vec3::Y);
-            }
         }
     }
 }

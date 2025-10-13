@@ -7,6 +7,7 @@ pub struct PlayerMovement {
     pub path: VecDeque<Entity>,
     pub segment_start: Vec3, 
     pub translation_progress: f32,
+    pub segment_distance: f32,
 }
 
 #[derive(Message)]
@@ -22,6 +23,7 @@ impl Default for PlayerMovement {
             path: VecDeque::new(),
             segment_start: Vec3::ZERO,
             translation_progress: 0.0,
+            segment_distance: 0.0,
         }
     }
 }

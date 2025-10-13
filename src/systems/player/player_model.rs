@@ -60,11 +60,8 @@ fn play_animation_when_ready(
     children: Query<&Children>,
     player_query: Query<&PlayerModel>,
 ) {
-    // Find the AnimationToPlay component on our entity
     if let Ok(player) = player_query.get(scene_ready.entity) {
-        // Search descendants for the animation player
         for child in children.iter_descendants(scene_ready.entity) {
-            // CRITICAL: Insert the animation graph handle FIRST
             commands.entity(child)
                 .insert(AnimationGraphHandle(player.graph_handle.clone()));
         }

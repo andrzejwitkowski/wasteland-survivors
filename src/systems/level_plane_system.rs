@@ -16,7 +16,7 @@ impl Default for LevelPlaneConfig {
             num_rows: 3,
             chunk_width: 30,
             chunk_height: 30,
-            grid_size: 10,
+            grid_size: 15,
         }
     }
 }

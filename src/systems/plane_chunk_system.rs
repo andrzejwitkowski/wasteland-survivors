@@ -46,11 +46,6 @@ pub fn spawn_single_chunk_grid(
     // Spawn the chunk entity
     commands.spawn((
         Mesh3d(meshes.add(create_plane_chunk_mesh(&plane_chunk))),
-        // MeshMaterial3d(materials.add(StandardMaterial {
-        //     base_color: plane_chunk.color,
-        //     perceptual_roughness: 1.0,
-        //     ..default()
-        // })),
         MeshMaterial3d(pavement_materials.material.clone()),
         Transform::from_xyz(x_pos, 0.0, z_pos),
         plane_chunk,
@@ -137,6 +132,8 @@ fn spawn_tile_meshes(
         alpha_mode: AlphaMode::Blend,
         ..default()
     });
+
+    let tile_mesh = meshes.add(Plane3d::default().mesh().size(tile_width as f32, tile_height as f32));
     
     for local_z in 0..grid_size {
         for local_x in 0..grid_size {
@@ -152,7 +149,7 @@ fn spawn_tile_meshes(
             let tile_position = chunk_transform.translation + Vec3::new(local_x_offset, 0.01, local_z_offset);
             
             commands.spawn((
-                Mesh3d(meshes.add(Plane3d::default().mesh().size(tile_width as f32, tile_height as f32))),
+                Mesh3d(tile_mesh.clone()),
                 MeshMaterial3d(invisible_mat.clone()),
                 Transform::from_translation(tile_position),
                 Pickable::default(),
