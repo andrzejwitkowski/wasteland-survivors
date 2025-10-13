@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, scene::InstanceId};
 
 #[derive(Component)]
 pub struct Player {
@@ -6,8 +6,18 @@ pub struct Player {
     pub tile_entity: Option<Entity>,
 }
 
+#[derive(Component, Clone)]
+pub struct PlayerAnimation {
+    pub index: AnimationNodeIndex,
+}
+
 #[derive(Component)]
-pub struct PlayerModel;
+pub struct PlayerModel {
+    pub model: Handle<Scene>,
+    pub graph_handle: Handle<AnimationGraph>,
+    pub walk_clip: Option<PlayerAnimation>,
+    pub run_clip: Option<PlayerAnimation>,
+}
 
 impl Default for Player {
     fn default() -> Self {
