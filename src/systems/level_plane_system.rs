@@ -70,7 +70,6 @@ pub fn spawn_chunk_grid(
             spawn_single_chunk_grid(
                 &mut commands,
                 &mut meshes,
-                &mut materials,
                 &mut pavement_materials,
                 col,
                 row,

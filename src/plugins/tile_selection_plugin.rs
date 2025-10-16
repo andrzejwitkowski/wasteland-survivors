@@ -8,6 +8,12 @@ pub struct TileSelectionPlugin;
 impl Plugin for TileSelectionPlugin {
     fn build(&self, app: &mut App) {
         app.add_message::<TileSelectedEvent>()
+            .configure_sets(
+                Update,
+                (
+                    InputSet,
+                )
+            )
             .add_systems(
                 Update,
                 handle_tile_selection.in_set(InputSet)

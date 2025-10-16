@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::{
     components::TileRegistry, 
-    systems::{level_plane_system::spawn_default_chunk_grid, plane_chunk_system::{build_tile_registry, draw_tiles_borders, handle_chunk_clicks}}
+    systems::{level_plane_system::spawn_default_chunk_grid, plane_chunk_system::{build_tile_registry, draw_tiles_borders, handle_optimized_grid_clicks}}
 };
 
 pub struct TestPlanePlugin;
@@ -18,6 +18,6 @@ impl Plugin for TestPlanePlugin {
             )
         );
         // app.add_systems(Update, draw_tiles_borders);
-        app.add_systems(Update, handle_chunk_clicks);
+        app.add_systems(Update, handle_optimized_grid_clicks);
     }
 }

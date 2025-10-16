@@ -55,22 +55,22 @@ pub fn player_movement_request_handler(
                 info!("Interrupting current path for new destination");
             }
 
-            // Perform A* pathfinding from source to target tile
-            if let Some(path) = astar_pathfind(
-                event.source_tile_entity, 
-                event.target_tile_entity, 
-                &tiles
-            ) {
-                info!("Path found with {} steps", path.len());
-                
-                player_movement.path = VecDeque::from(path); 
-                player_movement.segment_start = transform.translation;
-                player_movement.translation_progress = 0.0;
-                player_movement.target_transform = None;
-                
-            } else {
-                warn!("No path found from source to target tile");
-                continue;
+            if let Some(tile_entity) = player.tile_entity {
+                if let Some(path) = astar_pathfind(
+                    tile_entity,
+                    event.target_tile_entity,
+                    &tiles
+                ) {
+                    info!("New path found with {} steps", path.len());
+
+                    player_movement.path = VecDeque::from(path);
+                    player_movement.segment_start = transform.translation; // Start from current position
+                    player_movement.translation_progress = 0.0;
+                    player_movement.target_transform = None; // THIS IS THE KEY LINE FOR INTERRUPTION
+                    player_movement.segment_distance = 0.0;
+                } else {
+                    warn!("No path found to target tile");
+                }
             }
         } else {
             warn!("No player found to execute movement");
@@ -148,15 +148,20 @@ pub fn astar_pathfind(
     goal: Entity,
     tiles: &Query<(&Tile, &Transform), Without<Player>>,
 ) -> Option<Vec<Entity>> {
+
+    info!{"astart_pathfind start"}
+
     let (start_tile, start_transform) = tiles.get(start).ok()?;
     let (goal_tile, goal_transform) = tiles.get(goal).ok()?;
     
     // Check if start and goal are walkable
     if !start_tile.walkable || !goal_tile.walkable {
+        info!("Pathfinding failed: Start or goal is not walkable");
         return None;
     }
     
     if start == goal {
+        info!("Pathfinding succeeded: Start and goal are the same");
         return Some(vec![start]);
     }
 
