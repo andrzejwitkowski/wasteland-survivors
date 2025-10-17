@@ -1,8 +1,8 @@
 use std::collections::{BinaryHeap, HashMap, HashSet};
 
+use crate::components::Tile;
 use crate::components::movements::a_star_movement::AStarNode;
 use crate::components::player::player::Player;
-use crate::components::{Tile};
 use bevy::prelude::*;
 
 fn heuristic(pos1: Vec3, pos2: Vec3) -> f32 {

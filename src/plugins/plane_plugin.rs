@@ -4,9 +4,7 @@ use crate::{
     components::TileRegistry,
     systems::{
         level_plane_system::spawn_default_chunk_grid,
-        plane_chunk_system::{
-            build_tile_registry, handle_optimized_grid_clicks,
-        },
+        plane_chunk_system::{build_tile_registry, handle_optimized_grid_clicks},
     },
 };
 
