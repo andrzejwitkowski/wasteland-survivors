@@ -8,12 +8,10 @@ pub fn init_animated_model(
     query: Query<(Entity, &AnimatedModel), Added<AnimatedModel>>,
 ) {
     for (entity, animated_model) in &query {
-        commands.entity(entity)
+        commands
+            .entity(entity)
             .insert(SceneRoot(animated_model.model_handle.clone()))
-            .insert(AnimationState {
-                current_animation: None,
-                is_playing: false,
-            })
+            .insert(AnimationState { current_animation: None, is_playing: false })
             .observe(setup_animation_graph);
     }
 }
@@ -27,8 +25,7 @@ fn setup_animation_graph(
 ) {
     if let Ok(model) = animated_models.get(scene_ready.entity) {
         for child in children.iter_descendants(scene_ready.entity) {
-            commands.entity(child)
-                .insert(AnimationGraphHandle(model.animation_graph.clone()));
+            commands.entity(child).insert(AnimationGraphHandle(model.animation_graph.clone()));
         }
     }
 }
@@ -43,16 +40,19 @@ pub fn handle_animation_events(
 ) {
     for event in events.read() {
         // Find the animation player for this specific entity
-        if let (Ok(model), Ok(mut state)) = (
-            animated_models.get(event.entity),
-            animation_states.get_mut(event.entity)
-        ) {
+        if let (Ok(model), Ok(mut state)) =
+            (animated_models.get(event.entity), animation_states.get_mut(event.entity))
+        {
             info!("Found model with {} animations", model.animations.len());
             if let Some(clip) = model.animations.get(&event.animation_name) {
                 info!("Found clip: index={}, name={}", clip.index.index(), event.animation_name);
                 // Find the animation player in the entity's descendants
-                if let Some(animation_player_entity) = find_animation_player(event.entity, &children) {
-                    if let Ok(mut animation_player) = animation_players.get_mut(animation_player_entity) {
+                if let Some(animation_player_entity) =
+                    find_animation_player(event.entity, &children)
+                {
+                    if let Ok(mut animation_player) =
+                        animation_players.get_mut(animation_player_entity)
+                    {
                         animation_player.stop_all();
                         animation_player.play(clip.index).repeat();
                         state.current_animation = Some(event.animation_name.clone());

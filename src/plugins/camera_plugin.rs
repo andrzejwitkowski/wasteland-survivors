@@ -1,6 +1,9 @@
 use bevy::prelude::*;
 
-use crate::systems::{camera_system::{camera_controller, init_camera}, player::player_system::init_player};
+use crate::systems::{
+    camera_system::{camera_controller, init_camera},
+    player::player_system::init_player,
+};
 
 pub struct CameraPlugin;
 
@@ -10,4 +13,3 @@ impl Plugin for CameraPlugin {
         app.add_systems(Update, camera_controller);
     }
 }
-

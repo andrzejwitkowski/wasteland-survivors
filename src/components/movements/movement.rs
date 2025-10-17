@@ -1,8 +1,8 @@
-use std::collections::VecDeque;
 use bevy::prelude::*;
+use std::collections::VecDeque;
 
 pub enum MovementType {
-    A_START,
+    ASTAR,
     SHORTEST,
 }
 #[derive(Component)]

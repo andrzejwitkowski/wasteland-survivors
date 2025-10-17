@@ -1,8 +1,11 @@
-use bevy::{prelude::*, transform};
-use crate::{components::{player::player::Player, PlaneChunk, Tile, TileRegistry, TileSelectedEvent}, materials::pavement};
+use crate::{
+    components::{PlaneChunk, Tile, TileRegistry, TileSelectedEvent, player::player::Player},
+    materials::pavement,
+};
+use bevy::prelude::*;
 
 /// Spawns a grid of plane chunks arranged in columns and rows
-/// 
+///
 /// # Arguments
 /// * `num_cols` - Number of columns in the grid
 /// * `num_rows` - Number of rows in the grid
@@ -22,11 +25,14 @@ pub fn spawn_single_chunk_grid(
     grid_size: i32,
 ) {
     info!("Spawning optimized chunk grid: {}x{} chunks", num_cols, num_rows);
-    
+
     // Calculate chunk position
-    let x_pos = (col as f32 * chunk_width as f32) - ((num_cols as f32 * chunk_width as f32) / 2.0) + (chunk_width as f32 / 2.0);
-    let z_pos = (row as f32 * chunk_height as f32) - ((num_rows as f32 * chunk_height as f32) / 2.0) + (chunk_height as f32 / 2.0);
-    
+    let x_pos = (col as f32 * chunk_width as f32) - ((num_cols as f32 * chunk_width as f32) / 2.0)
+        + (chunk_width as f32 / 2.0);
+    let z_pos = (row as f32 * chunk_height as f32)
+        - ((num_rows as f32 * chunk_height as f32) / 2.0)
+        + (chunk_height as f32 / 2.0);
+
     // Create the plane chunk
     let plane_chunk = PlaneChunk {
         x: col,
@@ -38,27 +44,20 @@ pub fn spawn_single_chunk_grid(
     };
 
     let transform = Transform::from_translation(Vec3::new(x_pos, 0.0, z_pos));
-    
+
     // ✅ SINGLE CLICKABLE MESH for the entire grid
     commands.spawn((
-        Mesh3d(meshes.add(Plane3d::default().mesh().size(
-            chunk_width as f32,
-            chunk_height as f32,
-        ))),
+        Mesh3d(meshes.add(Plane3d::default().mesh().size(chunk_width as f32, chunk_height as f32))),
         MeshMaterial3d(pavement_materials.material.clone()),
         transform.clone(),
         Pickable::default(),
         plane_chunk,
         Name::new(format!("Grid Mesh ({}, {})", col, row)),
     ));
-    
+
     // ✅ STILL SPAWN INDIVIDUAL TILE ENTITIES for metadata
-    spawn_optimized_tile_entities(
-        commands,
-        &plane_chunk,
-        &transform,
-    );
-    
+    spawn_optimized_tile_entities(commands, &plane_chunk, &transform);
+
     debug!("Spawned optimized grid at position ({}, {})", x_pos, z_pos);
 }
 
@@ -66,7 +65,7 @@ fn spawn_optimized_tile_entities(
     commands: &mut Commands,
     plane_chunk: &PlaneChunk,
     chunk_transform: &Transform,
-) { 
+) {
     for local_z in 0..plane_chunk.grid_size {
         for local_x in 0..plane_chunk.grid_size {
             // Calculate GLOBAL coordinates
@@ -75,17 +74,19 @@ fn spawn_optimized_tile_entities(
 
             let tile_width = plane_chunk.width as f32 / plane_chunk.grid_size as f32;
             let tile_height = plane_chunk.height as f32 / plane_chunk.grid_size as f32;
-            
-            let local_x_pos = (local_x as f32 * tile_width) - (plane_chunk.width as f32 / 2.0) + (tile_width / 2.0);
-            let local_z_pos = (local_z as f32 * tile_height) - (plane_chunk.height as f32 / 2.0) + (tile_height / 2.0);
-            
-            let world_pos = chunk_transform.translation + Vec3::new(local_x_pos, 0.0, local_z_pos);            
-            
+
+            let local_x_pos = (local_x as f32 * tile_width) - (plane_chunk.width as f32 / 2.0)
+                + (tile_width / 2.0);
+            let local_z_pos = (local_z as f32 * tile_height) - (plane_chunk.height as f32 / 2.0)
+                + (tile_height / 2.0);
+
+            let world_pos = chunk_transform.translation + Vec3::new(local_x_pos, 0.0, local_z_pos);
+
             // Spawn tile entity WITHOUT mesh - just metadata
             commands.spawn((
                 Tile {
-                    x: global_x,  // Store GLOBAL coordinates
-                    z: global_z,  // Store GLOBAL coordinates
+                    x: global_x, // Store GLOBAL coordinates
+                    z: global_z, // Store GLOBAL coordinates
                     walkable: true,
                     selected: false,
                     hovered: false,
@@ -112,31 +113,41 @@ pub fn handle_optimized_grid_clicks(
         if let Ok((grid_transform, plane_chunk)) = grid_query.get(event.entity) {
             if let Some(hit_position) = event.hit.position {
                 // Convert click position to tile coordinates
-                if let Some((local_x, local_z)) = world_to_tile_coords(
-                    hit_position,
-                    grid_transform,
-                    plane_chunk,
-                ) {
+                if let Some((local_x, local_z)) =
+                    world_to_tile_coords(hit_position, grid_transform, plane_chunk)
+                {
                     // Calculate global coordinates for TARGET tile
                     let target_global_x = plane_chunk.x * plane_chunk.grid_size + local_x;
                     let target_global_z = plane_chunk.z * plane_chunk.grid_size + local_z;
 
-                    info!("Looking for tile at global coordinates ({}, {})", target_global_x, target_global_z);
+                    info!(
+                        "Looking for tile at global coordinates ({}, {})",
+                        target_global_x, target_global_z
+                    );
 
                     // ✅ USE REGISTRY: O(1) lookup for target tile
-                    if let Some(&target_tile_entity) = tile_registry.tiles_by_coord.get(&(target_global_x, target_global_z)) {
+                    if let Some(&target_tile_entity) =
+                        tile_registry.tiles_by_coord.get(&(target_global_x, target_global_z))
+                    {
                         if let Ok((player_transform, _)) = player_query.single() {
                             // ✅ CORRECT: Use new function to find player's actual tile
-                            if let Some((source_global_x, source_global_z)) = find_player_tile_coords(
-                                player_transform,
-                                &grid_query,
-                            ) {
-                                info!("Looking for source tile at global coordinates ({}, {})", source_global_x, source_global_z);
+                            if let Some((source_global_x, source_global_z)) =
+                                find_player_tile_coords(player_transform, &grid_query)
+                            {
+                                info!(
+                                    "Looking for source tile at global coordinates ({}, {})",
+                                    source_global_x, source_global_z
+                                );
 
                                 // ✅ USE REGISTRY: O(1) lookup for source tile
-                                if let Some(&source_tile_entity) = tile_registry.tiles_by_coord.get(&(source_global_x, source_global_z)) {
-
-                                    info!("Found source tile entity ({}, {})", source_global_x, source_global_z);
+                                if let Some(&source_tile_entity) = tile_registry
+                                    .tiles_by_coord
+                                    .get(&(source_global_x, source_global_z))
+                                {
+                                    info!(
+                                        "Found source tile entity ({}, {})",
+                                        source_global_x, source_global_z
+                                    );
 
                                     if source_tile_entity != target_tile_entity {
                                         tile_selected_events.write(TileSelectedEvent {
@@ -189,25 +200,6 @@ fn find_player_tile_coords(
     None
 }
 
-fn player_transform_to_tile_coords(
-    player_transform: &Transform,
-    plane_chunk: &PlaneChunk,
-) -> Option<(i32, i32)> {
-    // Calculate tile size
-    let tile_width = plane_chunk.width as f32 / plane_chunk.grid_size as f32;
-    let tile_height = plane_chunk.height as f32 / plane_chunk.grid_size as f32;
-        
-    // Calculate grid boundaries in local space
-    let grid_half_width = plane_chunk.width as f32 / 2.0;
-    let grid_half_height = plane_chunk.height as f32 / 2.0;
-
-    // Calculate which tile the player is currently on
-    let source_local_x = ((player_transform.translation.x + grid_half_width) / tile_width).floor() as i32;
-    let source_local_z = ((player_transform.translation.z + grid_half_height) / tile_height).floor() as i32;
-
-    Some((source_local_x, source_local_z))
-}
-
 fn world_to_tile_coords(
     world_pos: Vec3,
     grid_transform: &Transform,
@@ -215,22 +207,25 @@ fn world_to_tile_coords(
 ) -> Option<(i32, i32)> {
     // Transform to grid local space using the inverse of the transform matrix
     let local_pos = grid_transform.compute_affine().inverse().transform_point3(world_pos);
-    
+
     // Calculate tile size
     let tile_width = plane_chunk.width as f32 / plane_chunk.grid_size as f32;
     let tile_height = plane_chunk.height as f32 / plane_chunk.grid_size as f32;
-    
+
     // Calculate grid boundaries in local space
     let grid_half_width = plane_chunk.width as f32 / 2.0;
     let grid_half_height = plane_chunk.height as f32 / 2.0;
-    
+
     // Calculate which tile was clicked
     let tile_x = ((local_pos.x + grid_half_width) / tile_width).floor() as i32;
     let tile_z = ((local_pos.z + grid_half_height) / tile_height).floor() as i32;
-    
+
     // Check if within this grid's bounds
-    if tile_x >= 0 && tile_x < plane_chunk.grid_size && 
-       tile_z >= 0 && tile_z < plane_chunk.grid_size {
+    if tile_x >= 0
+        && tile_x < plane_chunk.grid_size
+        && tile_z >= 0
+        && tile_z < plane_chunk.grid_size
+    {
         Some((tile_x, tile_z))
     } else {
         None
@@ -242,20 +237,17 @@ pub fn draw_tiles_borders(
     tile_query: Query<(&Transform, &Tile)>,
     test_plane_query: Query<&PlaneChunk>,
 ) {
-
     for test_plane in test_plane_query.iter() {
-
         let tile_width = test_plane.width / test_plane.grid_size;
         let tile_height = test_plane.height / test_plane.grid_size;
 
         for (transform, tile) in tile_query.iter() {
-                
             draw_tile_borders(transform, &mut gizmos, tile_width, tile_height, 0.0, Color::BLACK);
-        
+
             let color = match (tile.selected, tile.hovered) {
-                (true, _) => tile.selected_color,      // Selected takes priority
-                (false, true) => tile.hovered_color,   // Hovered but not selected
-                (false, false) => tile.idle_color,     // Neither
+                (true, _) => tile.selected_color,    // Selected takes priority
+                (false, true) => tile.hovered_color, // Hovered but not selected
+                (false, false) => tile.idle_color,   // Neither
             };
 
             // Draw filled rectangle inside borders
@@ -264,8 +256,14 @@ pub fn draw_tiles_borders(
     }
 }
 
-fn draw_tile_borders(transform: &Transform, gizmos: &mut Gizmos, tile_width: i32, tile_height: i32, margin: f32, color: Color) {
-
+fn draw_tile_borders(
+    transform: &Transform,
+    gizmos: &mut Gizmos,
+    tile_width: i32,
+    tile_height: i32,
+    margin: f32,
+    color: Color,
+) {
     let half_width = (tile_width as f32 / 2.0) + margin;
     let half_height = (tile_height as f32 / 2.0) + margin;
     let center = transform.translation;
@@ -339,15 +337,15 @@ fn calculate_neighbors_for_tile(
         (-1, 0),  // W
         (-1, 1),  // NW
     ];
-    
+
     let mut neighbors = [None; 8];
-    
+
     for (i, (dx, dz)) in directions.iter().enumerate() {
         let neighbor_coord = (x + dx, z + dz);
         if let Some(&neighbor_entity) = tile_registry.tiles_by_coord.get(&neighbor_coord) {
             neighbors[i] = Some(neighbor_entity);
         }
     }
-    
+
     neighbors
 }

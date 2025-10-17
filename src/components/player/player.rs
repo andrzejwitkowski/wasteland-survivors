@@ -1,4 +1,4 @@
-use bevy::{prelude::*, scene::InstanceId};
+use bevy::prelude::*;
 
 #[derive(Component)]
 pub struct Player {
@@ -21,9 +21,6 @@ pub struct PlayerModel {
 
 impl Default for Player {
     fn default() -> Self {
-        Self {
-            speed: 10.0,
-            tile_entity: None,
-        }
+        Self { speed: 10.0, tile_entity: None }
     }
 }

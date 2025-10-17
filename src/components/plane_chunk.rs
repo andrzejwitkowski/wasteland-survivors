@@ -13,7 +13,7 @@ pub struct PlaneChunk {
 }
 
 #[derive(Component)]
-pub struct Tile{
+pub struct Tile {
     pub x: i32,
     pub z: i32,
     pub walkable: bool,
@@ -33,19 +33,12 @@ pub struct TileRegistry {
 #[derive(Message)]
 pub struct TileSelectedEvent {
     pub source_tile_entity: Entity,
-    pub target_tile_entity: Entity
+    pub target_tile_entity: Entity,
 }
 
 impl Default for PlaneChunk {
     fn default() -> Self {
-        Self {
-            x: 0,
-            z: 0,
-            width: 30,
-            height: 30,
-            color: Color::srgb(0.0, 1.0, 0.0),
-            grid_size: 10,
-        }
+        Self { x: 0, z: 0, width: 30, height: 30, color: Color::srgb(0.0, 1.0, 0.0), grid_size: 10 }
     }
 }
 

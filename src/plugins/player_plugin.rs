@@ -1,10 +1,18 @@
 use bevy::prelude::*;
 
-use crate::{components::{animated_model::PlayAnimationMessage}, systems::player::{
-        gizmo_system::{draw_player, set_player_gizmo_debug},
-        player_model::{init_player_model, play_player_animation}, player_system::init_player}};
 use crate::components::movements::movement::MoveRequestEvent;
-use crate::systems::movement::movement_system::{init_player_movement, player_movement_request_handler, tile_selected_event_handle, update_player_movement};
+use crate::systems::movement::movement_system::{
+    init_player_movement, player_movement_request_handler, tile_selected_event_handle,
+    update_player_movement,
+};
+use crate::{
+    components::animated_model::PlayAnimationMessage,
+    systems::player::{
+        gizmo_system::{draw_player, set_player_gizmo_debug},
+        player_model::{init_player_model, play_player_animation},
+        player_system::init_player,
+    },
+};
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum PlayerSystemSet {
@@ -17,8 +25,7 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_message::<MoveRequestEvent>()
+        app.add_message::<MoveRequestEvent>()
             .add_message::<PlayAnimationMessage>()
             .add_systems(Startup, init_player)
             .add_systems(Startup, init_player_movement.after(init_player))
@@ -33,7 +40,7 @@ impl Plugin for PlayerPlugin {
                     PlayerSystemSet::Input.after(crate::plugins::tile_selection_plugin::InputSet),
                     PlayerSystemSet::Movement.after(PlayerSystemSet::Input),
                     PlayerSystemSet::Update.after(PlayerSystemSet::Movement),
-                )
+                ),
             )
             .add_systems(
                 Update,
@@ -41,7 +48,7 @@ impl Plugin for PlayerPlugin {
                     tile_selected_event_handle.in_set(PlayerSystemSet::Input),
                     player_movement_request_handler.in_set(PlayerSystemSet::Movement),
                     update_player_movement.in_set(PlayerSystemSet::Update),
-                )
+                ),
             );
     }
 }

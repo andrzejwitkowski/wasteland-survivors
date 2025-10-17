@@ -1,14 +1,14 @@
-use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
+use std::collections::VecDeque;
 
-use bevy::prelude::*;
 use crate::components::movements::movement::{MoveRequestEvent, Movement};
-use crate::components::player::player::{Player};
+use crate::components::player::player::Player;
 use crate::components::{Tile, TileSelectedEvent};
-use crate::systems::movement::a_star_movement::{astar_pathfind};
+use crate::systems::movement::a_star_movement::astar_pathfind;
+use bevy::prelude::*;
 
 pub fn init_player_movement(
     mut commands: Commands,
-    player_query: Query<Entity, (With<Player>, Without<Movement>)>
+    player_query: Query<Entity, (With<Player>, Without<Movement>)>,
 ) {
     if let Ok(player) = player_query.single() {
         commands.entity(player).insert(Movement::default());
@@ -36,11 +36,10 @@ pub fn tile_selected_event_handle(
 pub fn player_movement_request_handler(
     mut player_move_events: MessageReader<MoveRequestEvent>,
     mut player_query: Query<(&mut Transform, &mut Player, &mut Movement)>,
-    tiles: Query<(&Tile, &Transform), Without<Player>>
+    tiles: Query<(&Tile, &Transform), Without<Player>>,
 ) {
     for event in player_move_events.read() {
         if let Ok((transform, mut player, mut player_movement)) = player_query.single_mut() {
-
             if player.tile_entity.is_none() {
                 player.tile_entity = Some(event.source_tile_entity);
             }
@@ -56,11 +55,7 @@ pub fn player_movement_request_handler(
             }
 
             if let Some(tile_entity) = player.tile_entity {
-                if let Some(path) = astar_pathfind(
-                    tile_entity,
-                    event.target_tile_entity,
-                    &tiles
-                ) {
+                if let Some(path) = astar_pathfind(tile_entity, event.target_tile_entity, &tiles) {
                     info!("New path found with {} steps", path.len());
 
                     player_movement.path = VecDeque::from(path);
@@ -92,7 +87,8 @@ pub fn update_player_movement(
                     player_movement.translation_progress = 0.0;
                     player.tile_entity = Some(next_entity); // Update current tile
 
-                    player_movement.segment_distance = player_movement.segment_start.distance(target.translation);
+                    player_movement.segment_distance =
+                        player_movement.segment_start.distance(target.translation);
 
                     // ✅ ROTATION: Face the target
                     let direction = target.translation - player_movement.segment_start;
@@ -113,7 +109,6 @@ pub fn update_player_movement(
 
         // 3. Move toward target
         if let Some(target) = player_movement.target_transform {
-
             let movement_this_frame = player.speed * time.delta_secs();
             let progress_increment = if player_movement.segment_distance > 0.0 {
                 movement_this_frame / player_movement.segment_distance
@@ -125,10 +120,9 @@ pub fn update_player_movement(
             player_movement.translation_progress = player_movement.translation_progress.min(1.0);
 
             // ✅ Lerp from segment_start to target
-            transform.translation = player_movement.segment_start.lerp(
-                target.translation,
-                player_movement.translation_progress
-            );
+            transform.translation = player_movement
+                .segment_start
+                .lerp(target.translation, player_movement.translation_progress);
         }
     }
 }

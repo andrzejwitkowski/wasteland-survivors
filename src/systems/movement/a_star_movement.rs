@@ -1,10 +1,9 @@
-use std::collections::{BinaryHeap, HashMap, HashSet, VecDeque};
+use std::collections::{BinaryHeap, HashMap, HashSet};
 
-use bevy::prelude::*;
-use crate::components::movements::movement::{MoveRequestEvent, Movement};
-use crate::components::player::player::{Player};
-use crate::components::{Tile, TileSelectedEvent};
 use crate::components::movements::a_star_movement::AStarNode;
+use crate::components::player::player::Player;
+use crate::components::{Tile};
+use bevy::prelude::*;
 
 fn heuristic(pos1: Vec3, pos2: Vec3) -> f32 {
     let dx = pos1.x - pos2.x;
@@ -18,8 +17,7 @@ pub fn astar_pathfind(
     goal: Entity,
     tiles: &Query<(&Tile, &Transform), Without<Player>>,
 ) -> Option<Vec<Entity>> {
-
-    info!{"astart_pathfind start"}
+    info! {"astart_pathfind start"}
 
     let (start_tile, start_transform) = tiles.get(start).ok()?;
     let (goal_tile, goal_transform) = tiles.get(goal).ok()?;
@@ -47,11 +45,7 @@ pub fn astar_pathfind(
 
     let h_start = heuristic(start_transform.translation, goal_pos);
 
-    open_set.push(AStarNode {
-        entity: start,
-        f_score: h_start,
-        g_score: 0.0,
-    });
+    open_set.push(AStarNode { entity: start, f_score: h_start, g_score: 0.0 });
 
     while let Some(current_node) = open_set.pop() {
         let current = current_node.entity;

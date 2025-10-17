@@ -1,13 +1,13 @@
 mod components;
-mod systems;
-mod plugins;
 mod materials;
+mod plugins;
+mod systems;
 
-use bevy::prelude::*;
 use bevy::app::App;
+use bevy::prelude::*;
 
-use crate::plugins::{CameraPlugin, PlayerPlugin, TestPlanePlugin, TileSelectionPlugin};
 use crate::materials::pavement::CheckedFloorMaterials;
+use crate::plugins::{CameraPlugin, PlayerPlugin, TestPlanePlugin, TileSelectionPlugin};
 
 fn main() {
     App::new()
