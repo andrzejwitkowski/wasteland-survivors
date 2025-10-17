@@ -1,8 +1,10 @@
 use bevy::prelude::*;
 
-use crate::{components::{animated_model::PlayAnimationMessage, player::movement::PlayerMoveRequestEvent}, systems::player::{
-        gizmo_system::{draw_player, set_player_gizmo_debug}, movement_system::{init_player_movement, player_movement_request_handler, tile_selected_event_handle, update_player_movement},
+use crate::{components::{animated_model::PlayAnimationMessage}, systems::player::{
+        gizmo_system::{draw_player, set_player_gizmo_debug},
         player_model::{init_player_model, play_player_animation}, player_system::init_player}};
+use crate::components::movements::movement::MoveRequestEvent;
+use crate::systems::movement::movement_system::{init_player_movement, player_movement_request_handler, tile_selected_event_handle, update_player_movement};
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum PlayerSystemSet {
@@ -16,7 +18,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .add_message::<PlayerMoveRequestEvent>()
+            .add_message::<MoveRequestEvent>()
             .add_message::<PlayAnimationMessage>()
             .add_systems(Startup, init_player)
             .add_systems(Startup, init_player_movement.after(init_player))
