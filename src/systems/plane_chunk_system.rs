@@ -1,8 +1,11 @@
+use std::collections::HashMap;
+use std::hash::Hash;
 use crate::{
     components::{PlaneChunk, Tile, TileRegistry, TileSelectedEvent, player::player::Player},
     materials::pavement,
 };
 use bevy::prelude::*;
+use crate::components::TilePosition;
 
 /// Spawns a grid of plane chunks arranged in columns and rows
 ///
@@ -232,65 +235,6 @@ fn world_to_tile_coords(
     }
 }
 
-pub fn draw_tiles_borders(
-    mut gizmos: Gizmos,
-    tile_query: Query<(&Transform, &Tile)>,
-    test_plane_query: Query<&PlaneChunk>,
-) {
-    for test_plane in test_plane_query.iter() {
-        let tile_width = test_plane.width / test_plane.grid_size;
-        let tile_height = test_plane.height / test_plane.grid_size;
-
-        for (transform, tile) in tile_query.iter() {
-            draw_tile_borders(transform, &mut gizmos, tile_width, tile_height, 0.0, Color::BLACK);
-
-            let color = match (tile.selected, tile.hovered) {
-                (true, _) => tile.selected_color,    // Selected takes priority
-                (false, true) => tile.hovered_color, // Hovered but not selected
-                (false, false) => tile.idle_color,   // Neither
-            };
-
-            // Draw filled rectangle inside borders
-            draw_tile_borders(transform, &mut gizmos, tile_width, tile_height, -0.3, color);
-        }
-    }
-}
-
-fn draw_tile_borders(
-    transform: &Transform,
-    gizmos: &mut Gizmos,
-    tile_width: i32,
-    tile_height: i32,
-    margin: f32,
-    color: Color,
-) {
-    let half_width = (tile_width as f32 / 2.0) + margin;
-    let half_height = (tile_height as f32 / 2.0) + margin;
-    let center = transform.translation;
-
-    // Draw rectangle borders
-    gizmos.line(
-        center + Vec3::new(-half_width, 0.0, -half_height),
-        center + Vec3::new(half_width, 0.0, -half_height),
-        color,
-    );
-    gizmos.line(
-        center + Vec3::new(half_width, 0.0, -half_height),
-        center + Vec3::new(half_width, 0.0, half_height),
-        color,
-    );
-    gizmos.line(
-        center + Vec3::new(half_width, 0.0, half_height),
-        center + Vec3::new(-half_width, 0.0, half_height),
-        color,
-    );
-    gizmos.line(
-        center + Vec3::new(-half_width, 0.0, half_height),
-        center + Vec3::new(-half_width, 0.0, -half_height),
-        color,
-    );
-}
-
 pub fn build_tile_registry(
     mut tile_registry: ResMut<TileRegistry>,
     tile_query: Query<(Entity, &mut Tile)>,
@@ -348,4 +292,72 @@ fn calculate_neighbors_for_tile(
     }
 
     neighbors
+}
+
+pub fn init_player_startup_tile(
+    mut commands: Commands,
+    mut player_query: Query<(Entity, &mut Transform), With<Player>>,
+    tile_registry: Res<TileRegistry>,
+    grid_query: Query<(&Transform, &PlaneChunk), Without<Player>>,
+) {
+    if let Some((player_entity, mut player_transform)) = player_query.single_mut().ok() {
+        if let Some(middle) = get_middle(&tile_registry.tiles_by_coord) {
+            commands.entity(player_entity).insert(
+                TilePosition {
+                    tile: Some(middle.1.clone())
+                }
+            );
+            if let Some(world_pos) = calculate_tile_world_position(*middle.0, &grid_query) {
+                player_transform.translation = world_pos;
+                info!("Player positioned at middle tile: {:?}", world_pos);
+            }
+        }
+    }
+}
+
+fn get_middle<K,V>(map: &HashMap<K,V>) -> Option<(&K, &V)>
+where
+    K: Clone + Ord + Hash,
+    V: Clone
+{
+    if map.is_empty() {
+        return None;
+    }
+
+    let mut keys: Vec<&K> = map.keys().collect();
+    keys.sort();
+
+    let middle_index = keys.len() / 2;
+    if let Some(value) = map.get(keys[middle_index]) {
+        return Some((keys[middle_index], value));
+    }
+    None
+}
+
+fn calculate_tile_world_position(
+    tile_coord: (i32, i32),
+    grid_query: &Query<(&Transform, &PlaneChunk), Without<Player>>,
+) -> Option<Vec3> {
+    let (tile_x, tile_z) = tile_coord;
+
+    for (chunk_transform, chunk) in grid_query.iter() {
+        // Sprawdź czy kafelek należy do tego chunku
+        let local_x = tile_x - chunk.x * chunk.grid_size;
+        let local_z = tile_z - chunk.z * chunk.grid_size;
+
+        if local_x >= 0 && local_x < chunk.grid_size && local_z >= 0 && local_z < chunk.grid_size {
+            // Oblicz pozycję lokalną w chunk
+            let tile_width = chunk.width as f32 / chunk.grid_size as f32;
+            let tile_height = chunk.height as f32 / chunk.grid_size as f32;
+
+            let local_x_pos = (local_x as f32 * tile_width) - (chunk.width as f32 / 2.0) + (tile_width / 2.0);
+            let local_z_pos = (local_z as f32 * tile_height) - (chunk.height as f32 / 2.0) + (tile_height / 2.0);
+
+            // Przekształć na pozycję świata
+            let world_pos = chunk_transform.translation + Vec3::new(local_x_pos, 0.0, local_z_pos);
+            return Some(world_pos);
+        }
+    }
+
+    None
 }

@@ -16,6 +16,7 @@ pub struct Movement {
 
 #[derive(Message)]
 pub struct MoveRequestEvent {
+    pub movement_type: MovementType, // A* or other pathfinding algorithm
     pub source_tile_entity: Entity,
     pub target_tile_entity: Entity,
 }

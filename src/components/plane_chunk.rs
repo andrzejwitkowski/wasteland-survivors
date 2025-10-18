@@ -25,6 +25,11 @@ pub struct Tile {
     pub neighbor_entities: [Option<Entity>; 8], // Neighbor entities (N, NE, E, SE, S, SW, W, NW)
 }
 
+#[derive(Component)]
+pub struct TilePosition {
+    pub tile: Option<Entity>
+}
+
 #[derive(Resource, Default)]
 pub struct TileRegistry {
     pub tiles_by_coord: HashMap<(i32, i32), Entity>,

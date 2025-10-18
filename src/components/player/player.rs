@@ -3,7 +3,6 @@ use bevy::prelude::*;
 #[derive(Component)]
 pub struct Player {
     pub speed: f32,
-    pub tile_entity: Option<Entity>,
 }
 
 #[derive(Component, Clone)]
@@ -21,6 +20,6 @@ pub struct PlayerModel {
 
 impl Default for Player {
     fn default() -> Self {
-        Self { speed: 10.0, tile_entity: None }
+        Self { speed: 10.0 }
     }
 }

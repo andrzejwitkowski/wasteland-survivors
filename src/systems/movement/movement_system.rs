@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
-use crate::components::movements::movement::{MoveRequestEvent, Movement};
+use crate::components::movements::movement::{MoveRequestEvent, Movement, MovementType};
 use crate::components::player::player::Player;
-use crate::components::{Tile, TileSelectedEvent};
+use crate::components::{Tile, TilePosition, TileSelectedEvent};
 use crate::systems::movement::a_star_movement::astar_pathfind;
 use bevy::prelude::*;
 
@@ -24,6 +24,7 @@ pub fn tile_selected_event_handle(
     if let Ok(_) = player_query.single() {
         for event in tile_selected_events.read() {
             player_move_events.write(MoveRequestEvent {
+                movement_type: MovementType::ASTAR,
                 source_tile_entity: event.source_tile_entity,
                 target_tile_entity: event.target_tile_entity,
             });
@@ -33,15 +34,15 @@ pub fn tile_selected_event_handle(
     }
 }
 
-pub fn player_movement_request_handler(
+pub fn movement_request_handler(
     mut player_move_events: MessageReader<MoveRequestEvent>,
-    mut player_query: Query<(&mut Transform, &mut Player, &mut Movement)>,
+    mut player_query: Query<(&mut Transform, &mut Player, &mut Movement, &mut TilePosition)>,
     tiles: Query<(&Tile, &Transform), Without<Player>>,
 ) {
     for event in player_move_events.read() {
-        if let Ok((transform, mut player, mut player_movement)) = player_query.single_mut() {
-            if player.tile_entity.is_none() {
-                player.tile_entity = Some(event.source_tile_entity);
+        if let Ok((transform, mut player, mut player_movement, mut tile_position)) = player_query.single_mut() {
+            if tile_position.tile.is_none() {
+                tile_position.tile = Some(event.source_tile_entity);
             }
 
             if !player_movement.path.is_empty() {
@@ -54,8 +55,14 @@ pub fn player_movement_request_handler(
                 info!("Interrupting current path for new destination");
             }
 
-            if let Some(tile_entity) = player.tile_entity {
-                if let Some(path) = astar_pathfind(tile_entity, event.target_tile_entity, &tiles) {
+            if let Some(tile_entity) = tile_position.tile {
+
+                let paths = match event.movement_type {
+                    MovementType::ASTAR => astar_pathfind(tile_entity, event.target_tile_entity, &tiles),
+                    MovementType::SHORTEST => None
+                };
+
+                if let Some(path) = paths {
                     info!("New path found with {} steps", path.len());
 
                     player_movement.path = VecDeque::from(path);
@@ -74,18 +81,18 @@ pub fn player_movement_request_handler(
 }
 
 pub fn update_player_movement(
-    mut query: Query<(&mut Transform, &mut Player, &mut Movement)>,
+    mut query: Query<(&mut Transform, &mut Player, &mut Movement, &mut TilePosition)>,
     transforms: Query<&Transform, Without<Player>>,
     time: Res<Time>,
 ) {
-    for (mut transform, mut player, mut player_movement) in &mut query {
+    for (mut transform, mut player, mut player_movement, mut tile_position) in &mut query {
         if player_movement.target_transform.is_none() && !player_movement.path.is_empty() {
             if let Some(next_entity) = player_movement.path.pop_front() {
                 if let Ok(target) = transforms.get(next_entity) {
                     player_movement.segment_start = transform.translation; // ✅ Save current position
                     player_movement.target_transform = Some(*target);
                     player_movement.translation_progress = 0.0;
-                    player.tile_entity = Some(next_entity); // Update current tile
+                    tile_position.tile = Some(next_entity); // Update current tile
 
                     player_movement.segment_distance =
                         player_movement.segment_start.distance(target.translation);

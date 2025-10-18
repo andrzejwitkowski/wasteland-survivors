@@ -1,3 +1,5 @@
+use crate::components::player::player::Player;
+use crate::components::{TilePosition, TileRegistry};
 use crate::{materials::pavement, systems::plane_chunk_system::spawn_single_chunk_grid};
 use bevy::prelude::*;
 
