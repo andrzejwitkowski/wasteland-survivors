@@ -17,6 +17,9 @@ bevy = { version = "0.17.1", features = ["jpeg", "bevy_asset", "bevy_scene", "be
 name = "wasteland-survivors"
 path = "src/main.rs"
 
+[package.metadata.scripts]
+check-fmt = "bash scripts/check-fmt.sh"
+
 [profile.dev]     
 debug = true               # debuginfo on
 opt-level = 0              # pure debug stays as-is

@@ -1,17 +1,14 @@
 use bevy::prelude::*;
 
 use crate::components::movements::movement::MoveRequestEvent;
+use crate::systems::animation::init_animation_system;
 use crate::systems::movement::movement_system::{
     init_player_movement, movement_request_handler, tile_selected_event_handle,
     update_player_movement,
 };
 use crate::{
     components::animated_model::PlayAnimationMessage,
-    systems::player::{
-        gizmo_system::{draw_player, set_player_gizmo_debug},
-        player_model::{init_player_model, play_player_animation},
-        player_system::init_player,
-    },
+    systems::player::player_system::init_player,
 };
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
@@ -29,10 +26,11 @@ impl Plugin for PlayerPlugin {
             .add_message::<PlayAnimationMessage>()
             .add_systems(Startup, init_player)
             .add_systems(Startup, init_player_movement.after(init_player))
-            .add_systems(Startup, init_player_model.after(init_player_movement))
+            // .add_systems(Startup, init_player_model.after(init_player_movement))
+            .add_systems(Startup, init_animation_system.after(init_player_movement))
             // .add_systems(Update, set_player_gizmo_debug)
             // .add_systems(Update, draw_player)
-            .add_systems(Update, play_player_animation)
+            // .add_systems(Update, play_player_animation)
             .configure_sets(
                 Update,
                 (
