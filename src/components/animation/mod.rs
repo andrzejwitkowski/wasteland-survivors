@@ -1,4 +1,4 @@
-pub mod mode_animation;
+pub mod model_animation;
 
-pub use mode_animation::*;
+pub use model_animation::*;
 

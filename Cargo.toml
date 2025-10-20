@@ -12,6 +12,7 @@ categories = ["game-development", "game-engines"]
 
 [dependencies]
 bevy = { version = "0.17.1", features = ["jpeg", "bevy_asset", "bevy_scene", "bevy_gltf"]}
+log = "0.4.28"
 
 [[bin]]
 name = "wasteland-survivors"

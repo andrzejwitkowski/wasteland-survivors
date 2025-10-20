@@ -2,7 +2,7 @@ use std::collections::VecDeque;
 
 use crate::components::movements::movement::{MoveRequestEvent, Movement, MovementType};
 use crate::components::player::player::Player;
-use crate::components::{ModelAnimationGraph, Tile, TilePosition, TileSelectedEvent};
+use crate::components::{ModelAnimationGraph, MovementState, Tile, TilePosition, TileSelectedEvent};
 use crate::systems::movement::a_star_movement::astar_pathfind;
 use bevy::prelude::*;
 
@@ -11,7 +11,7 @@ pub fn init_player_movement(
     player_query: Query<Entity, (With<Player>, Without<Movement>)>,
 ) {
     if let Ok(player) = player_query.single() {
-        commands.entity(player).insert(Movement::default());
+        commands.entity(player).insert(Movement::default()).insert(MovementState::Idle);
         info!("Player movement initialized");
     }
 }
@@ -36,11 +36,11 @@ pub fn tile_selected_event_handle(
 
 pub fn movement_request_handler(
     mut player_move_events: MessageReader<MoveRequestEvent>,
-    mut player_query: Query<(&mut Transform, &mut Player, &mut Movement, &mut TilePosition, &ModelAnimationGraph)>,
+    mut player_query: Query<(&mut Transform, &mut Player, &mut Movement, &mut TilePosition, &mut MovementState)>,
     tiles: Query<(&Tile, &Transform), Without<Player>>,
 ) {
     for event in player_move_events.read() {
-        if let Ok((transform, mut player, mut player_movement, mut tile_position, model_animation)) = player_query.single_mut() {
+        if let Ok((transform,_, mut player_movement, mut tile_position, mut movement_state)) = player_query.single_mut() {
             if tile_position.tile.is_none() {
                 tile_position.tile = Some(event.source_tile_entity);
             }
@@ -70,6 +70,9 @@ pub fn movement_request_handler(
                     player_movement.translation_progress = 0.0;
                     player_movement.target_transform = None; // THIS IS THE KEY LINE FOR INTERRUPTION
                     player_movement.segment_distance = 0.0;
+
+                    *movement_state = MovementState::Walking;
+
                 } else {
                     warn!("No path found to target tile");
                 }
@@ -81,11 +84,11 @@ pub fn movement_request_handler(
 }
 
 pub fn update_player_movement(
-    mut query: Query<(&mut Transform, &mut Player, &mut Movement, &mut TilePosition)>,
+    mut query: Query<(&mut Transform, &mut Player, &mut Movement, &mut TilePosition, &mut MovementState)>,
     transforms: Query<&Transform, Without<Player>>,
     time: Res<Time>,
 ) {
-    for (mut transform, player, mut player_movement, mut tile_position) in &mut query {
+    for (mut transform, player, mut player_movement, mut tile_position, mut movement_state) in &mut query {
         if player_movement.target_transform.is_none() && !player_movement.path.is_empty() {
             if let Some(next_entity) = player_movement.path.pop_front() {
                 if let Ok(target) = transforms.get(next_entity) {
@@ -130,6 +133,10 @@ pub fn update_player_movement(
             transform.translation = player_movement
                 .segment_start
                 .lerp(target.translation, player_movement.translation_progress);
+        }
+
+        if player_movement.path.is_empty() {
+            *movement_state = MovementState::Idle;
         }
     }
 }
