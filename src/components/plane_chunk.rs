@@ -36,6 +36,9 @@ pub struct TileRegistry {
 }
 
 #[derive(Message)]
+pub struct TileRegistryCreatedEvent;
+
+#[derive(Message)]
 pub struct TileSelectedEvent {
     pub source_tile_entity: Entity,
     pub target_tile_entity: Entity,

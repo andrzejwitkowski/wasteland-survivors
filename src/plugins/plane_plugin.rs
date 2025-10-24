@@ -7,12 +7,14 @@ use crate::{
         plane_chunk_system::{build_tile_registry, handle_optimized_grid_clicks},
     },
 };
-use crate::systems::plane_chunk_system::init_player_startup_tile;
+use crate::components::TileRegistryCreatedEvent;
+use crate::systems::player::init_player_startup_tile;
 
 pub struct TestPlanePlugin;
 
 impl Plugin for TestPlanePlugin {
     fn build(&self, app: &mut App) {
+        app.add_message::<TileRegistryCreatedEvent>();
         app.init_resource::<TileRegistry>();
         app.add_systems(
             Startup,

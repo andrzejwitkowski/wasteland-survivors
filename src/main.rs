@@ -2,6 +2,8 @@ mod components;
 mod materials;
 mod plugins;
 mod systems;
+mod enemy;
+
 use bevy::app::App;
 use bevy::prelude::*;
 
