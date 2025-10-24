@@ -296,11 +296,11 @@ fn calculate_neighbors_for_tile(
 
 pub fn init_player_startup_tile(
     mut commands: Commands,
-    mut player_query: Query<(Entity, &mut Transform), With<Player>>,
+    mut player_query: Query<(Entity), (With<Player>, Without<Transform>)>,
     tile_registry: Res<TileRegistry>,
     grid_query: Query<(&Transform, &PlaneChunk), Without<Player>>,
 ) {
-    if let Some((player_entity, mut player_transform)) = player_query.single_mut().ok() {
+    if let Some(player_entity) = player_query.single_mut().ok() {
         if let Some(middle) = get_middle(&tile_registry.tiles_by_coord) {
             commands.entity(player_entity).insert(
                 TilePosition {
@@ -308,7 +308,7 @@ pub fn init_player_startup_tile(
                 }
             );
             if let Some(world_pos) = calculate_tile_world_position(*middle.0, &grid_query) {
-                player_transform.translation = world_pos;
+                commands.entity(player_entity).insert(Transform::from_translation(world_pos));
                 info!("Player positioned at middle tile: {:?}", world_pos);
             }
         }

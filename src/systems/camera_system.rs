@@ -23,7 +23,8 @@ impl Default for CameraFollow {
 
 pub fn init_camera(mut commands: Commands, player_query: Query<&Transform, With<Player>>) {
     if let Ok(player_transform) = player_query.single() {
-        let camera_offset = Vec3::new(0.0, 50.0, 10.0);
+        // let camera_offset = Vec3::new(0.0, 50.0, 10.0);
+        let camera_offset = Vec3::new(-35.36, 50.0, 35.36);
         let camera_position = player_transform.translation + camera_offset;
 
         let camera_entity = (

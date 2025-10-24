@@ -14,9 +14,6 @@ pub struct ModelSceneRoot {
     pub scene_transform: Transform
 }
 
-#[derive(Component)]
-pub struct AnimationGraphInitialized;
-
 #[derive(Message)]
 pub struct PlayAnimation {
     pub animation_name: String,
@@ -29,7 +26,3 @@ pub enum MovementState {
     Walking,
     Running,
 }
-
-#[derive(Component)]
-pub struct InitialAnimationPlayed;
-

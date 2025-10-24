@@ -1,11 +1,11 @@
 use crate::components::player::player::Player;
-use crate::components::{AnimationGraphInitialized, ModelAnimationGraph, PlayAnimation};
+use crate::components::{ModelAnimationGraph, PlayAnimation};
 use bevy::animation::AnimationPlayer;
 use bevy::math::Vec3;
 use bevy::prelude::{
     AnimationGraph, AnimationGraphHandle, AnimationTransitions, AssetServer, Assets, ChildOf,
-    Children, Commands, Entity, GltfAssetLabel, MessageReader, MessageWriter, On, Query, Res,
-    ResMut, Transform, With, Without, info,
+    Children, Commands, Component, Entity, GltfAssetLabel, MessageReader, MessageWriter, On, Query,
+    Res, ResMut, Transform, With, Without, info,
 };
 use bevy::scene::{SceneInstanceReady, SceneRoot};
 use std::collections::HashMap;
@@ -36,13 +36,23 @@ pub fn init_animation_system(
     let mut graph = AnimationGraph::new();
     let root = graph.root;
 
-    let scene_root = asset_server.load(PLAYER_MODEL_SCENE);
+    let scene_root = asset_server.load(PLAYER_MODEL_SCENE); // → SceneInstanceReady RAZ!
 
-    let walk = graph.add_clip(asset_server.load(PLAYER_MODEL_WALK), 1.0, root);
-
-    let run = graph.add_clip(asset_server.load(PLAYER_MODEL_RUN), 1.0, root);
-
-    let idle = graph.add_clip(asset_server.load(PLAYER_MODEL_IDLE), 1.0, root);
+    let idle = graph.add_clip(
+        asset_server.load(GltfAssetLabel::Animation(0).from_asset(PLAYER_MODEL)),
+        1.0,
+        root,
+    );
+    let run = graph.add_clip(
+        asset_server.load(GltfAssetLabel::Animation(1).from_asset(PLAYER_MODEL)),
+        1.0,
+        root,
+    );
+    let walk = graph.add_clip(
+        asset_server.load(GltfAssetLabel::Animation(2).from_asset(PLAYER_MODEL)),
+        1.0,
+        root,
+    );
 
     let graph_handle = graphs.add(graph);
 
@@ -79,19 +89,12 @@ fn on_animation_graph_loaded(
     scene_ready: On<SceneInstanceReady>,
     mut commands: Commands,
     children: Query<&Children>,
-    model_animation_graph: Query<(Entity, &ModelAnimationGraph, &Children), With<Player>>,
-    already_initialized: Query<&AnimationGraphInitialized>,
+    model_animation_graph: Query<(&ModelAnimationGraph, &Children), With<Player>>,
 ) {
     info!("Scene ready for entity: {:?}", scene_ready.entity);
 
-    // Guard: Skip if already initialized (SceneInstanceReady can fire multiple times)
-    if already_initialized.get(scene_ready.entity).is_ok() {
-        info!("Animation graph already initialized, skipping duplicate scene ready event");
-        return;
-    }
-
     // Find the player entity that has this scene as a child
-    for (player_entity, model, player_children) in model_animation_graph.iter() {
+    for (model, player_children) in model_animation_graph.iter() {
         // Check if scene_ready.entity is a child of this player
         if player_children.contains(&scene_ready.entity) {
             // Add AnimationGraphHandle to all descendants of the scene
@@ -103,62 +106,71 @@ fn on_animation_graph_loaded(
             }
             info!("Added AnimationGraphHandle to all children");
 
-            // Mark the SCENE entity as initialized
-            commands.entity(scene_ready.entity).insert(AnimationGraphInitialized);
-
-            // Also mark the PLAYER entity to trigger initial animation
-            commands.entity(player_entity).insert(AnimationGraphInitialized);
             break;
         }
     }
 }
 
+#[derive(Component)]
+pub struct AnimationGraphInitialized;
+
 pub fn start_initial_animation(
     mut commands: Commands,
-    mut play_animation_writer: MessageWriter<PlayAnimation>,
-    query: Query<
-        Entity,
-        (
-            With<Player>,
-            With<AnimationGraphInitialized>,
-            Without<crate::components::InitialAnimationPlayed>,
-        ),
+    children: Query<&Children>,
+    players: Query<(Entity, &ModelAnimationGraph), With<Player>>,
+    mut animation_players: Query<
+        (Entity, &mut AnimationPlayer, &mut AnimationTransitions),
+        (With<AnimationGraphHandle>, Without<AnimationGraphInitialized>),
     >,
 ) {
-    for entity in query.iter() {
-        info!("Starting initial IDLE animation for player");
-        play_animation_writer.write(PlayAnimation {
-            animation_name: IDLE.to_string(),
-            model_animation_graph: entity,
-        });
-        // Mark that we started the initial animation so this only happens once
-        commands.entity(entity).insert(crate::components::InitialAnimationPlayed);
+    for (player_entity, model_graph) in &players {
+        // ✅ Klasyczna pętla for - działa z &mut
+        for child in children.iter_descendants(player_entity) {
+            if let Ok((entity, mut player, mut transitions)) = animation_players.get_mut(child) {
+                play_idle_animation(model_graph, &mut player, &mut transitions);
+                commands.entity(entity).insert(AnimationGraphInitialized);
+                info!("Initialized IDLE animation for entity: {:?}", entity);
+            }
+        }
+    }
+}
+
+#[inline]
+fn play_idle_animation(
+    model_graph: &ModelAnimationGraph,
+    player: &mut AnimationPlayer,
+    transitions: &mut AnimationTransitions,
+) {
+    if let Some(&idle_id) = model_graph.animations.get(IDLE) {
+        transitions
+            .play(player, idle_id, Duration::from_secs_f32(TRANSITION_DURATION))
+            .repeat();
     }
 }
 
 pub fn on_play_animation(
     mut events: MessageReader<PlayAnimation>,
-    mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
     children: Query<&Children>,
     model_animation_graph: Query<&ModelAnimationGraph>,
+    mut animation_players: Query<(&mut AnimationPlayer, &mut AnimationTransitions)>,
 ) {
     for event in events.read() {
-        if let Ok(model_graph) = model_animation_graph.get(event.model_animation_graph) {
-            for child in children.iter_descendants(event.model_animation_graph) {
-                if let Ok((mut player, mut transitions)) = animation_players.get_mut(child) {
-                    // player.stop_all();
-                    if let Some(&animation_id) = model_graph.animations.get(&event.animation_name) {
-                        info!("playing animation: {}", event.animation_name);
-                        transitions
-                            .play(
-                                &mut player,
-                                animation_id,
-                                Duration::from_secs_f32(TRANSITION_DURATION),
-                            )
-                            .repeat();
-                    }
+        let Ok(model_graph) = model_animation_graph.get(event.model_animation_graph) else {
+            continue;
+        };
+
+        info!("Playing animation: {}", event.animation_name);
+
+        for child in children.iter_descendants(event.model_animation_graph) {
+            if let Ok((mut player, mut transitions)) = animation_players.get_mut(child) {
+                if let Some(&animation_id) = model_graph.animations.get(&event.animation_name) {
+                    transitions
+                        .play(&mut player, animation_id, Duration::from_secs_f32(TRANSITION_DURATION))
+                        .repeat();
+                    info!("Started animation: {}", event.animation_name);
                 }
             }
         }
     }
 }
+
