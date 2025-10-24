@@ -135,7 +135,7 @@ pub fn update_player_movement(
                 .lerp(target.translation, player_movement.translation_progress);
         }
 
-        if player_movement.path.is_empty() {
+        if player_movement.path.is_empty() && *movement_state != MovementState::Idle {
             *movement_state = MovementState::Idle;
         }
     }

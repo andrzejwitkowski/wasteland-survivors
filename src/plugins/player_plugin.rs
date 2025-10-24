@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use crate::components::movements::movement::MoveRequestEvent;
 use crate::systems::animation::{
-    init_animation_system, movement_state_to_animation, on_play_animation,
+    init_animation_system, movement_state_to_animation, on_play_animation, start_initial_animation,
 };
 use crate::systems::movement::movement_system::{
     init_player_movement, movement_request_handler, tile_selected_event_handle,
@@ -49,6 +49,7 @@ impl Plugin for PlayerPlugin {
                     tile_selected_event_handle.in_set(PlayerSystemSet::Input),
                     movement_request_handler.in_set(PlayerSystemSet::Movement),
                     update_player_movement.in_set(PlayerSystemSet::Update),
+                    start_initial_animation.in_set(PlayerSystemSet::Update),
                     movement_state_to_animation.in_set(PlayerSystemSet::Update),
                     on_play_animation.in_set(PlayerSystemSet::Update),
                 ),

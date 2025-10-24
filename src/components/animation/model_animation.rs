@@ -29,3 +29,7 @@ pub enum MovementState {
     Walking,
     Running,
 }
+
+#[derive(Component)]
+pub struct InitialAnimationPlayed;
+
