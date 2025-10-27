@@ -13,11 +13,6 @@ use std::time::Duration;
 
 const PLAYER_MODEL_SCENE: &str = "models/dummy/dummy.glb#Scene0";
 
-const PLAYER_MODEL_IDLE: &str = "models/dummy/dummy.glb#Animation0";
-
-const PLAYER_MODEL_RUN: &str = "models/dummy/dummy.glb#Animation1";
-const PLAYER_MODEL_WALK: &str = "models/dummy/dummy.glb#Animation2";
-
 const PLAYER_MODEL: &str = "models/dummy/dummy.glb";
 const PLAYER_SCALE: f32 = 5.0;
 

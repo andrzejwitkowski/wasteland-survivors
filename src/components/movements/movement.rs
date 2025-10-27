@@ -14,9 +14,15 @@ pub struct Movement {
     pub segment_distance: f32,
 }
 
+#[derive(Component)]
+pub struct MovementSpeed {
+    pub speed: f32,
+}
+
 #[derive(Message)]
 pub struct MoveRequestEvent {
     pub movement_type: MovementType, // A* or other pathfinding algorithm
+    pub entity: Entity,              // Entity that is moving
     pub source_tile_entity: Entity,
     pub target_tile_entity: Entity,
 }
@@ -30,5 +36,17 @@ impl Default for Movement {
             translation_progress: 0.0,
             segment_distance: 0.0,
         }
+    }
+}
+
+impl Default for MovementSpeed {
+    fn default() -> Self {
+        Self { speed: 10.0 }
+    }
+}
+
+impl MovementSpeed {
+    pub fn enemy() -> Self {
+        Self { speed: 5.0 }
     }
 }

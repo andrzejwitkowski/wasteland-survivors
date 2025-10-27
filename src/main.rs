@@ -3,6 +3,7 @@ mod materials;
 mod plugins;
 mod systems;
 mod enemy;
+mod shared;
 
 use bevy::app::App;
 use bevy::prelude::*;

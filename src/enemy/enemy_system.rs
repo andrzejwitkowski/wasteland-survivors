@@ -1,10 +1,12 @@
 use crate::components::player::player::{Player, PlayerStartupTileSelectedEvent};
-use crate::components::{Tile, TileRegistry};
+use crate::components::{MovementState, Tile, TilePosition, TileRegistry};
 use crate::enemy;
-use crate::enemy::enemy_components::{Enemy, EnemyGizmo, EnemySpawned};
+use crate::enemy::enemy_components::{Enemy, EnemyGizmo, EnemyLastMovementTime, EnemySpawned};
 use bevy::prelude::*;
 use rand::Rng;
 use std::collections::HashMap;
+use crate::components::movements::movement::{Movement, MovementSpeed};
+use crate::shared::CharacterType;
 
 pub struct EnemyConfig {
     pub enemy_count: i32,
@@ -53,12 +55,18 @@ pub fn init_enemy(
                     info!("Spawning enemy at {:?}", enemy);
                     enemies.push(enemy.0);
 
-                    if let Ok((_, _, transform)) = tiles_query.get(enemy.1) {
+                    if let Ok((entity, _, transform)) = tiles_query.get(enemy.1) {
                         info!("Spawning enemy at {:?}", transform.translation);
                         commands.spawn((
                             Enemy::default(),
                             EnemyGizmo::default(),
                             Transform::from_translation(transform.translation),
+                            TilePosition::for_entity(entity),
+                            Movement::default(),
+                            MovementSpeed::enemy(),
+                            MovementState::Walking,
+                            EnemyLastMovementTime::default(),
+                            CharacterType::Enemy,
                         ));
                     }
                 }

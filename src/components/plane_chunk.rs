@@ -62,3 +62,9 @@ impl Default for Tile {
         }
     }
 }
+
+impl TilePosition {
+    pub fn for_entity(entity: Entity) -> Self {
+        Self { tile: Some(entity) }
+    }
+}

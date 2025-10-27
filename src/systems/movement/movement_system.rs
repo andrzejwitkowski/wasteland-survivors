@@ -1,10 +1,11 @@
 use std::collections::VecDeque;
 
-use crate::components::movements::movement::{MoveRequestEvent, Movement, MovementType};
+use crate::components::movements::movement::{MoveRequestEvent, Movement, MovementSpeed, MovementType};
 use crate::components::player::player::Player;
 use crate::components::{ModelAnimationGraph, MovementState, Tile, TilePosition, TileSelectedEvent};
 use crate::systems::movement::a_star_movement::astar_pathfind;
 use bevy::prelude::*;
+use crate::shared::CharacterType;
 
 pub fn init_player_movement(
     mut commands: Commands,
@@ -18,12 +19,13 @@ pub fn init_player_movement(
 
 pub fn tile_selected_event_handle(
     mut tile_selected_events: MessageReader<TileSelectedEvent>,
-    player_query: Query<&Player>,
+    player_query: Query<(Entity), With<Player>>,
     mut player_move_events: MessageWriter<MoveRequestEvent>,
 ) {
-    if let Ok(_) = player_query.single() {
+    if let Ok(entity) = player_query.single() {
         for event in tile_selected_events.read() {
             player_move_events.write(MoveRequestEvent {
+                entity,
                 movement_type: MovementType::ASTAR,
                 source_tile_entity: event.source_tile_entity,
                 target_tile_entity: event.target_tile_entity,
@@ -35,12 +37,12 @@ pub fn tile_selected_event_handle(
 }
 
 pub fn movement_request_handler(
-    mut player_move_events: MessageReader<MoveRequestEvent>,
-    mut player_query: Query<(&mut Transform, &mut Player, &mut Movement, &mut TilePosition, &mut MovementState)>,
-    tiles: Query<(&Tile, &Transform), Without<Player>>,
+    mut move_events: MessageReader<MoveRequestEvent>,
+    mut character_query: Query<(&mut Transform, &mut Movement, &mut TilePosition, &mut MovementState), With<CharacterType>>,
+    tiles: Query<(&Tile, &Transform), Without<CharacterType>>,
 ) {
-    for event in player_move_events.read() {
-        if let Ok((transform,_, mut player_movement, mut tile_position, mut movement_state)) = player_query.single_mut() {
+    for event in move_events.read() {
+        if let Ok((transform, mut player_movement, mut tile_position, mut movement_state)) = character_query.get_mut(event.entity) {
             if tile_position.tile.is_none() {
                 tile_position.tile = Some(event.source_tile_entity);
             }
@@ -84,24 +86,24 @@ pub fn movement_request_handler(
 }
 
 pub fn update_player_movement(
-    mut query: Query<(&mut Transform, &mut Player, &mut Movement, &mut TilePosition, &mut MovementState)>,
-    transforms: Query<&Transform, Without<Player>>,
+    query: Query<(&mut Transform, &mut MovementSpeed, &mut Movement, &mut TilePosition, &mut MovementState, &CharacterType)>,
+    transforms: Query<&Transform, Without<MovementSpeed>>,
     time: Res<Time>,
 ) {
-    for (mut transform, player, mut player_movement, mut tile_position, mut movement_state) in &mut query {
-        if player_movement.target_transform.is_none() && !player_movement.path.is_empty() {
-            if let Some(next_entity) = player_movement.path.pop_front() {
+    for (mut transform, speed, mut movement, mut tile_position, mut movement_state, character_type) in query {
+        if movement.target_transform.is_none() && !movement.path.is_empty() {
+            if let Some(next_entity) = movement.path.pop_front() {
                 if let Ok(target) = transforms.get(next_entity) {
-                    player_movement.segment_start = transform.translation; // ✅ Save current position
-                    player_movement.target_transform = Some(*target);
-                    player_movement.translation_progress = 0.0;
+                    movement.segment_start = transform.translation; // ✅ Save current position
+                    movement.target_transform = Some(*target);
+                    movement.translation_progress = 0.0;
                     tile_position.tile = Some(next_entity); // Update current tile
 
-                    player_movement.segment_distance =
-                        player_movement.segment_start.distance(target.translation);
+                    movement.segment_distance =
+                        movement.segment_start.distance(target.translation);
 
                     // ✅ ROTATION: Face the target
-                    let direction = target.translation - player_movement.segment_start;
+                    let direction = target.translation - movement.segment_start;
                     if direction.length_squared() > 0.001 {
                         // Look at target (assumes Y-up, character faces Z-forward)
                         transform.look_to(-direction.normalize(), Vec3::Y);
@@ -111,31 +113,31 @@ pub fn update_player_movement(
         }
 
         // 2. Check if translation_progress >= 1.0
-        if player_movement.translation_progress >= 1.0 {
+        if movement.translation_progress >= 1.0 {
             // Set target to None (will pop next element on next frame)
-            player_movement.target_transform = None;
+            movement.target_transform = None;
             continue;
         }
 
         // 3. Move toward target
-        if let Some(target) = player_movement.target_transform {
-            let movement_this_frame = player.speed * time.delta_secs();
-            let progress_increment = if player_movement.segment_distance > 0.0 {
-                movement_this_frame / player_movement.segment_distance
+        if let Some(target) = movement.target_transform {
+            let movement_this_frame = speed.speed * time.delta_secs();
+            let progress_increment = if movement.segment_distance > 0.0 {
+                movement_this_frame / movement.segment_distance
             } else {
                 1.0 // Instant movement for zero distance
             };
 
-            player_movement.translation_progress += progress_increment;
-            player_movement.translation_progress = player_movement.translation_progress.min(1.0);
+            movement.translation_progress += progress_increment;
+            movement.translation_progress = movement.translation_progress.min(1.0);
 
             // ✅ Lerp from segment_start to target
-            transform.translation = player_movement
+            transform.translation = movement
                 .segment_start
-                .lerp(target.translation, player_movement.translation_progress);
+                .lerp(target.translation, movement.translation_progress);
         }
 
-        if player_movement.path.is_empty() && *movement_state != MovementState::Idle {
+        if character_type == &CharacterType::Player &&movement.path.is_empty() && *movement_state != MovementState::Idle {
             *movement_state = MovementState::Idle;
         }
     }

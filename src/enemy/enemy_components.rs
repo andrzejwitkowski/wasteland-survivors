@@ -15,6 +15,11 @@ pub struct EnemyGizmo {
     pub size: f32,
 }
 
+#[derive(Component, Clone)]
+pub struct EnemyLastMovementTime {
+    pub time: f32,
+}
+
 #[derive(Component)]
 pub struct EnemySpawned;
 
@@ -36,5 +41,11 @@ impl Default for EnemyGizmo {
             color: Color::srgb(0.0, 0.0, 1.0),
             size: 1.0,
         }
+    }
+}
+
+impl Default for EnemyLastMovementTime {
+    fn default() -> Self {
+        Self { time: 0.0 }
     }
 }

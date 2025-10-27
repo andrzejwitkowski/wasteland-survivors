@@ -1,9 +1,7 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub struct Player {
-    pub speed: f32,
-}
+pub struct Player;
 
 #[derive(Component, Clone)]
 pub struct PlayerAnimation {
@@ -21,10 +19,4 @@ pub struct PlayerModel {
     pub graph_handle: Handle<AnimationGraph>,
     pub walk_clip: Option<PlayerAnimation>,
     pub run_clip: Option<PlayerAnimation>,
-}
-
-impl Default for Player {
-    fn default() -> Self {
-        Self { speed: 10.0 }
-    }
 }

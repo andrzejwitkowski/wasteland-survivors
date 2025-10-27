@@ -4,6 +4,7 @@ use crate::components::Tile;
 use crate::components::movements::a_star_movement::AStarNode;
 use crate::components::player::player::Player;
 use bevy::prelude::*;
+use crate::shared::CharacterType;
 
 fn heuristic(pos1: Vec3, pos2: Vec3) -> f32 {
     let dx = pos1.x - pos2.x;
@@ -15,7 +16,7 @@ fn heuristic(pos1: Vec3, pos2: Vec3) -> f32 {
 pub fn astar_pathfind(
     start: Entity,
     goal: Entity,
-    tiles: &Query<(&Tile, &Transform), Without<Player>>,
+    tiles: &Query<(&Tile, &Transform), Without<CharacterType>>,
 ) -> Option<Vec<Entity>> {
     info! {"astart_pathfind start"}
 
