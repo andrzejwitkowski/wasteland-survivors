@@ -10,6 +10,7 @@ use crate::{
     components::animated_model::PlayAnimationMessage, systems::player::player_system::init_player,
 };
 use crate::components::PlayAnimation;
+use crate::components::player::player::PlayerStartupTileSelectedEvent;
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum PlayerSystemSet {
@@ -25,13 +26,10 @@ impl Plugin for PlayerPlugin {
         app.add_message::<MoveRequestEvent>()
             .add_message::<PlayAnimationMessage>()
             .add_message::<PlayAnimation>()
+            .add_message::<PlayerStartupTileSelectedEvent>()
             .add_systems(Startup, init_player)
             .add_systems(Startup, init_player_movement.after(init_player))
-            // .add_systems(Startup, init_player_model.after(init_player_movement))
             .add_systems(Startup, init_animation_system.after(init_player_movement))
-            // .add_systems(Update, set_player_gizmo_debug)
-            // .add_systems(Update, draw_player)
-            // .add_systems(Update, play_player_animation)
             .configure_sets(
                 Update,
                 (

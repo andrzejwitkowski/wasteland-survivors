@@ -10,6 +10,11 @@ pub struct PlayerAnimation {
     pub index: AnimationNodeIndex,
 }
 
+#[derive(Message)]
+pub struct PlayerStartupTileSelectedEvent {
+    pub tile_entity: Entity,
+}
+
 #[derive(Component)]
 pub struct PlayerModel {
     pub model: Handle<Scene>,

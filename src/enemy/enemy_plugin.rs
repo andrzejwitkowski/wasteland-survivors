@@ -1,4 +1,4 @@
-use crate::enemy::enemy_system::init_enemy;
+use crate::enemy::enemy_system::{draw_enemy_gizmo, init_enemy};
 use bevy::prelude::*;
 
 pub struct EnemyPlugin;
@@ -6,7 +6,7 @@ pub struct EnemyPlugin;
 impl Plugin for EnemyPlugin {
     fn build(&self, app: &mut App) {
         app.add_systems(
-            Startup, init_enemy
+            Update, (init_enemy, draw_enemy_gizmo)
         );
     }
 }

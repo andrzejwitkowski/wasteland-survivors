@@ -15,6 +15,9 @@ pub struct EnemyGizmo {
     pub size: f32,
 }
 
+#[derive(Component)]
+pub struct EnemySpawned;
+
 impl Default for Enemy {
     fn default() -> Self {
         Self {

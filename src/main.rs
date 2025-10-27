@@ -6,7 +6,7 @@ mod enemy;
 
 use bevy::app::App;
 use bevy::prelude::*;
-
+use crate::enemy::EnemyPlugin;
 use crate::materials::pavement::CheckedFloorMaterials;
 use crate::plugins::{CameraPlugin, PlayerPlugin, TestPlanePlugin, TileSelectionPlugin};
 
@@ -16,6 +16,7 @@ fn main() {
         .init_resource::<CheckedFloorMaterials>()
         .add_plugins(MeshPickingPlugin)
         .add_plugins(PlayerPlugin)
+        .add_plugins(EnemyPlugin)
         .add_plugins(TestPlanePlugin)
         .add_plugins(CameraPlugin)
         .add_plugins(TileSelectionPlugin)

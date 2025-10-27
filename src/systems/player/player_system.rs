@@ -1,4 +1,4 @@
-use crate::components::player::player::Player;
+use crate::components::player::player::{Player, PlayerStartupTileSelectedEvent};
 use bevy::prelude::*;
 use crate::components::{PlaneChunk, TilePosition, TileRegistry};
 
@@ -11,6 +11,7 @@ pub fn init_player(mut commands: Commands) {
 pub fn init_player_startup_tile(
     mut commands: Commands,
     mut player_query: Query<(Entity), (With<Player>, Without<Transform>)>,
+    mut player_startup_tile_selected_events: MessageWriter<PlayerStartupTileSelectedEvent>,
     tile_registry: Res<TileRegistry>,
     grid_query: Query<(&Transform, &PlaneChunk), Without<Player>>,
 ) {
@@ -25,6 +26,11 @@ pub fn init_player_startup_tile(
                 commands.entity(player_entity).insert(Transform::from_translation(world_pos));
                 info!("Player positioned at middle tile: {:?}", world_pos);
             }
+
+            player_startup_tile_selected_events.write(PlayerStartupTileSelectedEvent {
+                tile_entity: middle.1.clone()
+            });
+            info!("Player startup tile selected");
         }
     }
 }
