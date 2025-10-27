@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 use std::hash::Hash;
 use crate::{
-    components::{PlaneChunk, Tile, TileRegistry, TileSelectedEvent, player::player::Player},
+    components::{PlaneChunk, Tile, TileRegistry, TileSelectedEvent},
     materials::pavement,
 };
 use bevy::prelude::*;
-use crate::components::TilePosition;
+use crate::player::player::Player;
 
 /// Spawns a grid of plane chunks arranged in columns and rows
 ///

@@ -4,6 +4,7 @@ mod plugins;
 mod systems;
 mod enemy;
 mod shared;
+mod player;
 
 use bevy::app::App;
 use bevy::prelude::*;

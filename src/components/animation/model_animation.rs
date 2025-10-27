@@ -1,4 +1,4 @@
-use bevy::prelude::{AnimationGraph, AnimationNodeIndex, Component, Entity, Handle, Message, Scene, Transform};
+use bevy::prelude::{AnimationGraph, AnimationNodeIndex, Component, Entity, Handle, Message, Transform};
 use std::collections::HashMap;
 use bevy::scene::SceneRoot;
 

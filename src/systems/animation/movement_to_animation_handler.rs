@@ -1,6 +1,6 @@
 use bevy::prelude::{Changed, Entity, MessageWriter, Query, With};
 use crate::components::{MovementState, PlayAnimation};
-use crate::components::player::player::Player;
+use crate::player::player::Player;
 use crate::systems::animation::{IDLE, RUN, WALK};
 
 pub fn movement_state_to_animation(

@@ -1,8 +1,8 @@
 use std::collections::VecDeque;
 
 use crate::components::movements::movement::{MoveRequestEvent, Movement, MovementSpeed, MovementType};
-use crate::components::player::player::Player;
-use crate::components::{ModelAnimationGraph, MovementState, Tile, TilePosition, TileSelectedEvent};
+use crate::player::player::Player;
+use crate::components::{MovementState, Tile, TilePosition, TileSelectedEvent};
 use crate::systems::movement::a_star_movement::astar_pathfind;
 use bevy::prelude::*;
 use crate::shared::CharacterType;
@@ -19,7 +19,7 @@ pub fn init_player_movement(
 
 pub fn tile_selected_event_handle(
     mut tile_selected_events: MessageReader<TileSelectedEvent>,
-    player_query: Query<(Entity), With<Player>>,
+    player_query: Query<Entity, With<Player>>,
     mut player_move_events: MessageWriter<MoveRequestEvent>,
 ) {
     if let Ok(entity) = player_query.single() {

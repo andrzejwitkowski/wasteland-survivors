@@ -1,15 +1,16 @@
-use crate::components::player::player::Player;
 use crate::components::{ModelAnimationGraph, PlayAnimation};
+use crate::player::player::Player;
 use bevy::animation::AnimationPlayer;
 use bevy::math::Vec3;
 use bevy::prelude::{
-    AnimationGraph, AnimationGraphHandle, AnimationTransitions, AssetServer, Assets, ChildOf,
-    Children, Commands, Component, Entity, GltfAssetLabel, MessageReader, MessageWriter, On, Query,
-    Res, ResMut, Transform, With, Without, info,
+    AnimationClip, AnimationGraph, AnimationGraphHandle, AnimationTransitions, AssetServer, Assets,
+    Children, Commands, Component, Entity, GltfAssetLabel, Handle, MessageReader, On, Query, Res,
+    ResMut, Scene, Transform, With, Without, info,
 };
 use bevy::scene::{SceneInstanceReady, SceneRoot};
 use std::collections::HashMap;
 use std::time::Duration;
+use bevy::asset::RecursiveDependencyLoadState;
 
 const PLAYER_MODEL_SCENE: &str = "models/dummy/dummy.glb#Scene0";
 
@@ -22,6 +23,12 @@ pub const RUN: &str = "run";
 
 const TRANSITION_DURATION: f32 = 0.3;
 
+#[derive(Component)]
+pub struct PendingAnimations {
+    handles: Vec<Handle<AnimationClip>>,
+    scene_handle: Handle<Scene>,
+}
+
 pub fn init_animation_system(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
@@ -31,37 +38,21 @@ pub fn init_animation_system(
     let mut graph = AnimationGraph::new();
     let root = graph.root;
 
-    let scene_root = asset_server.load(PLAYER_MODEL_SCENE); // → SceneInstanceReady RAZ!
-
-    let idle = graph.add_clip(
+    let animation_handles: Vec<Handle<AnimationClip>> = vec![
         asset_server.load(GltfAssetLabel::Animation(0).from_asset(PLAYER_MODEL)),
-        1.0,
-        root,
-    );
-    let run = graph.add_clip(
         asset_server.load(GltfAssetLabel::Animation(1).from_asset(PLAYER_MODEL)),
-        1.0,
-        root,
-    );
-    let walk = graph.add_clip(
         asset_server.load(GltfAssetLabel::Animation(2).from_asset(PLAYER_MODEL)),
-        1.0,
-        root,
-    );
+    ];
 
+    let idle = graph.add_clip(animation_handles[0].clone(), 1.0, root);
+    let run = graph.add_clip(animation_handles[1].clone(), 1.0, root);
+    let walk = graph.add_clip(animation_handles[2].clone(), 1.0, root);
+
+    let scene_root = asset_server.load(PLAYER_MODEL_SCENE);
     let graph_handle = graphs.add(graph);
 
-    if let Some((player_entity, _)) = player_query.single().ok() {
+    if let Ok((player_entity, _)) = player_query.single() {
         info!("Inserting ModelAnimationGraph component to player entity");
-
-        // Spawn the scene as a child entity to prevent Transform overwriting
-        let scene_entity = commands
-            .spawn((
-                SceneRoot(scene_root.clone()),
-                Transform::from_scale(Vec3::splat(PLAYER_SCALE)),
-            ))
-            .observe(on_animation_graph_loaded)
-            .id();
 
         commands
             .entity(player_entity)
@@ -74,9 +65,42 @@ pub fn init_animation_system(
                         (IDLE.to_string(), idle),
                     ]),
                 },
+                PendingAnimations { handles: animation_handles, scene_handle: scene_root },
                 AnimationTransitions::new(),
-            ))
-            .add_child(scene_entity);
+            ));
+    }
+}
+pub fn check_animations_loaded(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    pending_query: Query<(Entity, &PendingAnimations), With<Player>>,
+) {
+
+    if pending_query.is_empty() {
+        return;
+    }
+
+    for (player_entity, pending) in &pending_query {
+        // Sprawdź stan wszystkich zależności naraz
+        let load_state = asset_server
+            .get_recursive_dependency_load_state(&pending.scene_handle);
+
+        if matches!(load_state, Some(RecursiveDependencyLoadState::Loaded)) {
+            info!("Scene with all dependencies loaded!");
+
+            let scene_entity = commands
+                .spawn((
+                    SceneRoot(pending.scene_handle.clone()),
+                    Transform::from_scale(Vec3::splat(PLAYER_SCALE)),
+                ))
+                .observe(on_animation_graph_loaded)
+                .id();
+
+            commands
+                .entity(player_entity)
+                .remove::<PendingAnimations>()
+                .add_child(scene_entity);
+        }
     }
 }
 
@@ -86,10 +110,10 @@ fn on_animation_graph_loaded(
     children: Query<&Children>,
     model_animation_graph: Query<(&ModelAnimationGraph, &Children), With<Player>>,
 ) {
-    info!("Scene ready for entity: {:?}", scene_ready.entity);
-
     // Find the player entity that has this scene as a child
     for (model, player_children) in model_animation_graph.iter() {
+        info!("Scene ready for entity: {:?}", scene_ready.entity);
+
         // Check if scene_ready.entity is a child of this player
         if player_children.contains(&scene_ready.entity) {
             // Add AnimationGraphHandle to all descendants of the scene
@@ -99,8 +123,6 @@ fn on_animation_graph_loaded(
                     AnimationTransitions::new(),
                 ));
             }
-            info!("Added AnimationGraphHandle to all children");
-
             break;
         }
     }
@@ -137,9 +159,7 @@ fn play_idle_animation(
     transitions: &mut AnimationTransitions,
 ) {
     if let Some(&idle_id) = model_graph.animations.get(IDLE) {
-        transitions
-            .play(player, idle_id, Duration::from_secs_f32(TRANSITION_DURATION))
-            .repeat();
+        transitions.play(player, idle_id, Duration::from_secs_f32(TRANSITION_DURATION)).repeat();
     }
 }
 
@@ -160,7 +180,11 @@ pub fn on_play_animation(
             if let Ok((mut player, mut transitions)) = animation_players.get_mut(child) {
                 if let Some(&animation_id) = model_graph.animations.get(&event.animation_name) {
                     transitions
-                        .play(&mut player, animation_id, Duration::from_secs_f32(TRANSITION_DURATION))
+                        .play(
+                            &mut player,
+                            animation_id,
+                            Duration::from_secs_f32(TRANSITION_DURATION),
+                        )
                         .repeat();
                     info!("Started animation: {}", event.animation_name);
                 }
@@ -168,4 +192,3 @@ pub fn on_play_animation(
         }
     }
 }
-

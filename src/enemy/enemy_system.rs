@@ -1,6 +1,5 @@
-use crate::components::player::player::{Player, PlayerStartupTileSelectedEvent};
+use crate::player::player::{PlayerStartupTileSelectedEvent};
 use crate::components::{MovementState, Tile, TilePosition, TileRegistry};
-use crate::enemy;
 use crate::enemy::enemy_components::{Enemy, EnemyGizmo, EnemyLastMovementTime, EnemySpawned};
 use bevy::prelude::*;
 use rand::Rng;
@@ -128,7 +127,7 @@ pub fn find_spawn_position(
         None
     } else {
         let index = rng.random_range(0..valid_tiles.len());
-        valid_tiles.get(index).map(|(coord, tile)| (**coord, *tile.clone()))
+        valid_tiles.get(index).map(|(coord, tile)| (**coord, **tile))
     }
 }
 

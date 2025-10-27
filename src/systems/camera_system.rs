@@ -1,5 +1,5 @@
 use crate::components::CameraController;
-use crate::components::player::player::Player;
+use crate::player::player::Player;
 use bevy::prelude::*;
 
 #[derive(Component)]

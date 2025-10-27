@@ -1,5 +1,5 @@
 use crate::components::movements::movement::MovementSpeed;
-use crate::components::player::player::{Player, PlayerStartupTileSelectedEvent};
+use crate::player::player::{Player, PlayerStartupTileSelectedEvent};
 use crate::components::{PlaneChunk, TilePosition, TileRegistry};
 use crate::shared::CharacterType;
 use bevy::prelude::*;
@@ -15,7 +15,7 @@ pub fn init_player(mut commands: Commands) {
 
 pub fn init_player_startup_tile(
     mut commands: Commands,
-    mut player_query: Query<(Entity), (With<Player>, Without<Transform>)>,
+    mut player_query: Query<Entity, (With<Player>, Without<Transform>)>,
     mut player_startup_tile_selected_events: MessageWriter<PlayerStartupTileSelectedEvent>,
     tile_registry: Res<TileRegistry>,
     grid_query: Query<(&Transform, &PlaneChunk), Without<Player>>,

@@ -1,5 +1,6 @@
-use crate::components::{Tile, TileSelectedEvent, player::player::Player, TilePosition};
+use crate::components::{Tile, TilePosition, TileSelectedEvent};
 use bevy::prelude::*;
+use crate::player::player::Player;
 
 /// Handles tile clicks and emits selection events
 pub fn handle_tile_selection(

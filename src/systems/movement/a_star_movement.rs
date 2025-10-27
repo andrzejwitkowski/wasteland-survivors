@@ -2,7 +2,6 @@ use std::collections::{BinaryHeap, HashMap, HashSet};
 
 use crate::components::Tile;
 use crate::components::movements::a_star_movement::AStarNode;
-use crate::components::player::player::Player;
 use bevy::prelude::*;
 use crate::shared::CharacterType;
 

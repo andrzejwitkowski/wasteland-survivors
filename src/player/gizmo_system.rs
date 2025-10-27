@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
-use crate::components::{gizmo::DebugGizmo, player::player::Player};
+use crate::player::gizmo::DebugGizmo;
+use crate::player::player::Player;
 
 pub fn set_player_gizmo_debug(
     mut commands: Commands,
