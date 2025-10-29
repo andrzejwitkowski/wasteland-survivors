@@ -1,15 +1,14 @@
 use bevy::prelude::*;
-
-use crate::components::movements::movement::MoveRequestEvent;
-use crate::systems::animation::{check_animations_loaded, init_animation_system, movement_state_to_animation, on_play_animation, start_initial_animation, PendingAnimations};
+use bevy_asset_loader::prelude::{ConfigureLoadingState, LoadingState, LoadingStateAppExt};
+use PlayerLoadingState::Loading;
+use crate::systems::animation::{check_animations_loaded, init_animation_system, movement_state_to_animation, on_play_animation, play_animation_system, start_initial_animation, PendingAnimations, PlayerAssets, PlayerLoadingState};
 use crate::systems::movement::movement_system::{
     init_player_movement, movement_request_handler, tile_selected_event_handle,
     update_player_movement,
 };
 
 use crate::components::PlayAnimation;
-use crate::player::player::PlayerStartupTileSelectedEvent;
-use crate::player::player_system::init_player;
+use crate::player::player_system::{init_player, init_player_startup_tile};
 
 #[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
 pub enum PlayerSystemSet {
@@ -22,12 +21,21 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.add_message::<MoveRequestEvent>()
+        app.init_state::<PlayerLoadingState>()
+            .add_loading_state(
+                LoadingState::new(Loading)
+                    .continue_to_state(PlayerLoadingState::Ready)
+                    .load_collection::<PlayerAssets>(),
+            )
+            .add_systems(OnEnter(PlayerLoadingState::Ready), init_animation_system.after(init_player_movement))
+            .add_systems(OnEnter(PlayerLoadingState::Ready), play_animation_system.after(init_animation_system))
+            .add_systems(OnEnter(PlayerLoadingState::Ready), init_player_startup_tile.after(init_animation_system))
+        ;
+
+        app
             .add_message::<PlayAnimation>()
-            .add_message::<PlayerStartupTileSelectedEvent>()
             .add_systems(Startup, init_player)
             .add_systems(Startup, init_player_movement.after(init_player))
-            .add_systems(Startup, init_animation_system.after(init_player_movement))
             .configure_sets(
                 Update,
                 (

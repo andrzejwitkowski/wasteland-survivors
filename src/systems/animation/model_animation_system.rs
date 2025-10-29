@@ -2,24 +2,40 @@ use crate::components::{ModelAnimationGraph, PlayAnimation};
 use crate::player::player::Player;
 use bevy::animation::AnimationPlayer;
 use bevy::math::Vec3;
-use bevy::prelude::{
-    AnimationClip, AnimationGraph, AnimationGraphHandle, AnimationTransitions, AssetServer, Assets,
-    Children, Commands, Component, Entity, GltfAssetLabel, Handle, MessageReader, On, Query, Res,
-    ResMut, Scene, Transform, With, Without, info,
-};
+use bevy::prelude::{AnimationClip, AnimationGraph, AnimationGraphHandle, AnimationTransitions, AssetServer, Assets, Children, Commands, Component, Entity, Handle, MessageReader, On, Query, Res, ResMut, Scene, Transform, With, Without, info, Resource, States};
 use bevy::scene::{SceneInstanceReady, SceneRoot};
 use std::collections::HashMap;
 use std::time::Duration;
 use bevy::asset::RecursiveDependencyLoadState;
+use bevy_asset_loader::prelude::*;
 
-const PLAYER_MODEL_SCENE: &str = "models/dummy/dummy.glb#Scene0";
-
-const PLAYER_MODEL: &str = "models/dummy/dummy.glb";
 const PLAYER_SCALE: f32 = 5.0;
 
 pub const IDLE: &str = "idle";
 pub const WALK: &str = "walk";
 pub const RUN: &str = "run";
+
+#[derive(Clone, Eq, PartialEq, Debug, Hash, Default, States)]
+pub enum PlayerLoadingState {
+    #[default]
+    Loading,
+    Ready,
+}
+
+#[derive(AssetCollection, Resource)]
+pub struct PlayerAssets {
+    #[asset(path = "models/dummy/dummy.glb#Scene0")]
+    scene: Handle<Scene>,
+
+    #[asset(path = "models/dummy/dummy.glb#Animation0")]
+    pub idle: Handle<AnimationClip>,
+
+    #[asset(path = "models/dummy/dummy.glb#Animation1")]
+    pub run: Handle<AnimationClip>,
+
+    #[asset(path = "models/dummy/dummy.glb#Animation2")]
+    pub walk: Handle<AnimationClip>,
+}
 
 const TRANSITION_DURATION: f32 = 0.3;
 
@@ -29,9 +45,12 @@ pub struct PendingAnimations {
     scene_handle: Handle<Scene>,
 }
 
+#[derive(Component)]
+pub struct PlayerWithAssetsSpawned;
+
 pub fn init_animation_system(
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
+    player_assets: Res<PlayerAssets>,
     mut graphs: ResMut<Assets<AnimationGraph>>,
     player_query: Query<(Entity, &Player), Without<ModelAnimationGraph>>,
 ) {
@@ -39,16 +58,15 @@ pub fn init_animation_system(
     let root = graph.root;
 
     let animation_handles: Vec<Handle<AnimationClip>> = vec![
-        asset_server.load(GltfAssetLabel::Animation(0).from_asset(PLAYER_MODEL)),
-        asset_server.load(GltfAssetLabel::Animation(1).from_asset(PLAYER_MODEL)),
-        asset_server.load(GltfAssetLabel::Animation(2).from_asset(PLAYER_MODEL)),
+        player_assets.idle.clone(),
+        player_assets.run.clone(),
+        player_assets.walk.clone(),
     ];
 
     let idle = graph.add_clip(animation_handles[0].clone(), 1.0, root);
     let run = graph.add_clip(animation_handles[1].clone(), 1.0, root);
     let walk = graph.add_clip(animation_handles[2].clone(), 1.0, root);
 
-    let scene_root = asset_server.load(PLAYER_MODEL_SCENE);
     let graph_handle = graphs.add(graph);
 
     if let Ok((player_entity, _)) = player_query.single() {
@@ -65,7 +83,10 @@ pub fn init_animation_system(
                         (IDLE.to_string(), idle),
                     ]),
                 },
-                PendingAnimations { handles: animation_handles, scene_handle: scene_root },
+                PendingAnimations {
+                    handles: animation_handles,
+                    scene_handle: player_assets.scene.clone()
+                },
                 AnimationTransitions::new(),
             ));
     }
@@ -190,5 +211,14 @@ pub fn on_play_animation(
                 }
             }
         }
+    }
+}
+
+pub fn play_animation_system(
+    mut commands: Commands,
+    player_query: Query<Entity, With<Player>>,
+) {
+    if let Ok(player_entity) = player_query.single() {
+        commands.entity(player_entity).insert(PlayerWithAssetsSpawned);
     }
 }

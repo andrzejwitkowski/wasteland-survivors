@@ -7,19 +7,21 @@ use crate::{
         plane_chunk_system::{build_tile_registry, handle_optimized_grid_clicks},
     },
 };
-use crate::systems::player::init_player_startup_tile;
+use crate::components::movements::movement::MoveRequestEvent;
+use crate::player::player::PlayerStartupTileSelectedEvent;
 
 pub struct TestPlanePlugin;
 
 impl Plugin for TestPlanePlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<TileRegistry>();
+        app.add_message::<PlayerStartupTileSelectedEvent>();
+        app.add_message::<MoveRequestEvent>();
         app.add_systems(
             Startup,
             (
                 spawn_default_chunk_grid,
                 build_tile_registry.after(spawn_default_chunk_grid),
-                init_player_startup_tile.after(build_tile_registry),
             ),
         );
         // app.add_systems(Update, draw_tiles_borders);

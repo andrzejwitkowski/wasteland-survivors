@@ -6,6 +6,7 @@ use rand::Rng;
 use std::collections::HashMap;
 use crate::components::movements::movement::{Movement, MovementSpeed};
 use crate::shared::CharacterType;
+use crate::systems::animation::PlayerWithAssetsSpawned;
 
 pub struct EnemyConfig {
     pub enemy_count: i32,
@@ -31,8 +32,13 @@ pub fn init_enemy(
     tile_registry: Res<TileRegistry>,
     tiles_query: Query<(Entity, &Tile, &Transform)>,
     enemy_spawned_query: Query<&EnemySpawned>,
+    player_spawned_query: Query<&PlayerWithAssetsSpawned>,
 ) {
+
     if !enemy_spawned_query.is_empty() {
+        return;
+    }
+    if player_spawned_query.is_empty() {
         return;
     }
 
