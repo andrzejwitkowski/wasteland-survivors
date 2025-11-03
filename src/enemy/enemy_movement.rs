@@ -12,7 +12,7 @@ pub fn update_enemy_movement(
 ) {
     if let Ok(player_tile) = player.single() {
         if let Some(player_tile_entity) = player_tile.tile {
-            for (entity, movement_state, mut last_movement_time, source_tile) in enemies.iter_mut() {
+            for (entity, _, mut last_movement_time, source_tile) in enemies.iter_mut() {
                 // if movement_state == &MovementState::Walking {
                     if (time.elapsed_secs() - last_movement_time.time) > 1.0 {
                         movement_request_writer.write(MoveRequestEvent {

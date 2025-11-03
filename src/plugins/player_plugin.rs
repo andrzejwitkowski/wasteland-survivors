@@ -6,6 +6,7 @@ use crate::systems::movement::movement_system::{
     init_player_movement, movement_request_handler, tile_selected_event_handle,
     update_player_movement,
 };
+use crate::systems::movement::resolve_movement_collisions;
 
 use crate::components::PlayAnimation;
 use crate::player::player::PlayerStartupTileSelectedEvent;
@@ -44,6 +45,7 @@ impl Plugin for PlayerPlugin {
                         .run_if(any_with_component::<PendingAnimations>),
                     tile_selected_event_handle.in_set(PlayerSystemSet::Input),
                     movement_request_handler.in_set(PlayerSystemSet::Movement),
+                    resolve_movement_collisions.in_set(PlayerSystemSet::Movement),  // DIABLO-STYLE: Rozwiązuj kolizje
                     update_player_movement.in_set(PlayerSystemSet::Update),
                     movement_state_to_animation.in_set(PlayerSystemSet::Update),
                     start_initial_animation.in_set(PlayerSystemSet::Update),

@@ -12,35 +12,41 @@ fn heuristic(pos1: Vec3, pos2: Vec3) -> f32 {
     dx * dx + dy * dy + dz * dz
 }
 
+/// Diablo-style A* pathfinding.
+/// Jednostki blokują tylko kafelki na których stoją (occupied_tiles).
 pub fn astar_pathfind(
     start: Entity,
     goal: Entity,
     tiles: &Query<(&Tile, &Transform), Without<CharacterType>>,
+    occupied_tiles: &HashSet<Entity>, // Zajęte kafelki przez inne jednostki
 ) -> Option<Vec<Entity>> {
-    info! {"astart_pathfind start"}
-
     let (start_tile, start_transform) = tiles.get(start).ok()?;
     let (goal_tile, goal_transform) = tiles.get(goal).ok()?;
 
     // Check if start and goal are walkable
     if !start_tile.walkable || !goal_tile.walkable {
-        info!("Pathfinding failed: Start or goal is not walkable");
         return None;
     }
 
     if start == goal {
-        info!("Pathfinding succeeded: Start and goal are the same");
         return Some(vec![start]);
     }
 
-    let goal_pos = goal_transform.translation;
+    // KLUCZOWE: Jeśli goal jest zajęty, znajdź najbliższy wolny kafelek
+    let actual_goal = if occupied_tiles.contains(&goal) {
+        // Goal zajęty - znajdź najbliższy sąsiedni wolny kafelek
+        find_nearest_free_neighbor(goal, occupied_tiles, tiles)?
+    } else {
+        goal
+    };
+
+    let goal_pos = tiles.get(actual_goal).ok()?.1.translation;
 
     let mut open_set = BinaryHeap::new();
     let mut closed_set = HashSet::new();
     let mut g_scores = HashMap::new();
     let mut came_from: HashMap<Entity, Entity> = HashMap::new();
 
-    info!("Starting A* from {:?} to {:?}", start, goal);
     g_scores.insert(start, 0.0);
 
     let h_start = heuristic(start_transform.translation, goal_pos);
@@ -50,8 +56,8 @@ pub fn astar_pathfind(
     while let Some(current_node) = open_set.pop() {
         let current = current_node.entity;
 
-        // Goal reached
-        if current == goal {
+        // Goal reached (actual_goal, nie oryginalny goal!)
+        if current == actual_goal {
             return Some(reconstruct_path(&came_from, current));
         }
 
@@ -61,7 +67,7 @@ pub fn astar_pathfind(
         }
         closed_set.insert(current);
 
-        // Skip if we've found a better path already (handles duplicates in heap)
+        // Skip if we've found a better path already
         if current_node.g_score > *g_scores.get(&current).unwrap_or(&f32::INFINITY) {
             continue;
         }
@@ -87,8 +93,13 @@ pub fn astar_pathfind(
                     Err(_) => continue,
                 };
 
-                // IMPORTANT: Skip non-walkable tiles
+                // DIABLO-STYLE: Skip non-walkable tiles
                 if !neighbor_tile.walkable {
+                    continue;
+                }
+
+                // DIABLO-STYLE: Skip ALL occupied tiles - no exceptions!
+                if occupied_tiles.contains(neighbor) {
                     continue;
                 }
 
@@ -117,7 +128,6 @@ pub fn astar_pathfind(
     }
 
     // No path found
-    info!("No path found");
     None
 }
 
@@ -132,3 +142,43 @@ fn reconstruct_path(came_from: &HashMap<Entity, Entity>, mut current: Entity) ->
     path.reverse();
     path
 }
+
+/// Znajduje najbliższy wolny kafelek sąsiadujący z goal.
+/// Używane gdy goal jest zajęty - jednostka zatrzyma się obok.
+fn find_nearest_free_neighbor(
+    goal: Entity,
+    occupied_tiles: &HashSet<Entity>,
+    tiles: &Query<(&Tile, &Transform), Without<CharacterType>>,
+) -> Option<Entity> {
+    let (goal_tile, goal_transform) = tiles.get(goal).ok()?;
+    let goal_pos = goal_transform.translation;
+
+    // Sprawdź wszystkich sąsiadów goal
+    let mut best_neighbor = None;
+    let mut best_distance = f32::INFINITY;
+
+    for maybe_neighbor in goal_tile.neighbor_entities.iter() {
+        if let Some(neighbor) = maybe_neighbor {
+            // Sprawdź czy sąsiad jest wolny i walkable
+            if !occupied_tiles.contains(neighbor) {
+                if let Ok((neighbor_tile, neighbor_transform)) = tiles.get(*neighbor) {
+                    if neighbor_tile.walkable {
+                        // Wybierz najbliższego (może być wiele wolnych sąsiadów)
+                        let distance = heuristic(neighbor_transform.translation, goal_pos);
+                        if distance < best_distance {
+                            best_distance = distance;
+                            best_neighbor = Some(*neighbor);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if best_neighbor.is_some() {
+        info!("Goal {:?} is occupied, redirecting to neighbor {:?}", goal, best_neighbor);
+    }
+
+    best_neighbor
+}
+

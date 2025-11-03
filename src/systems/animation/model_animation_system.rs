@@ -11,6 +11,7 @@ use bevy::scene::{SceneInstanceReady, SceneRoot};
 use std::collections::HashMap;
 use std::time::Duration;
 use bevy::asset::RecursiveDependencyLoadState;
+// use bevy_asset_loader::prelude::*;
 
 const PLAYER_MODEL_SCENE: &str = "models/dummy/dummy.glb#Scene0";
 

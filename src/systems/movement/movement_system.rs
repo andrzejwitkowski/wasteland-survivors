@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashSet};
 
 use crate::components::movements::movement::{MoveRequestEvent, Movement, MovementSpeed, MovementType};
 use crate::player::player::Player;
@@ -38,11 +38,68 @@ pub fn tile_selected_event_handle(
 
 pub fn movement_request_handler(
     mut move_events: MessageReader<MoveRequestEvent>,
-    mut character_query: Query<(&mut Transform, &mut Movement, &mut TilePosition, &mut MovementState), With<CharacterType>>,
+    // ParamSet jest konieczny - Bevy sprawdza konflikty statycznie
+    // Wszystkie queries dostępujące TilePosition muszą być w ParamSet!
+    mut queries: ParamSet<(
+        Query<&TilePosition, With<CharacterType>>,  // P0: readonly positions (nieużywane, zostaw dla kompatybilności)
+        Query<(&mut Transform, &mut Movement, &mut TilePosition, &mut MovementState), With<CharacterType>>,  // P1: mutable character
+        Query<&TilePosition, With<Player>>,  // P2: readonly player position
+        Query<(&TilePosition, &Movement), With<CharacterType>>,  // P3: readonly positions + paths
+    )>,
     tiles: Query<(&Tile, &Transform), Without<CharacterType>>,
 ) {
     for event in move_events.read() {
-        if let Ok((transform, mut player_movement, mut tile_position, mut movement_state)) = character_query.get_mut(event.entity) {
+        // Sprawdź czy poruszająca się jednostka to gracz
+        let is_player = queries.p2().single().map(|p| p.tile == Some(event.source_tile_entity)).unwrap_or(false);
+
+        // DIABLO-STYLE: Zbierz zajęte kafelki
+        let mut occupied_tiles: HashSet<Entity> = HashSet::new();
+
+        if is_player {
+            // GRACZ: Ignoruje zaplanowane ścieżki - tylko aktualne pozycje!
+            for (tile_pos, _movement) in queries.p3().iter() {
+                if tile_pos.tile == Some(event.source_tile_entity) {
+                    continue;
+                }
+                if let Some(current_tile) = tile_pos.tile {
+                    occupied_tiles.insert(current_tile);
+                }
+            }
+            info!("Player pathfinding: {} tiles occupied (current only)", occupied_tiles.len());
+        } else {
+            // WROGOWIE: Blokuj aktualne pozycje + pierwsze 3 kafelki ścieżek
+            for (tile_pos, movement) in queries.p3().iter() {
+                // Ignoruj poruszającą się jednostkę (source)
+                if tile_pos.tile == Some(event.source_tile_entity) {
+                    continue;
+                }
+
+                // Dodaj aktualny kafelek
+                if let Some(current_tile) = tile_pos.tile {
+                    occupied_tiles.insert(current_tile);
+                }
+
+                // ZBALANSOWANE: Blokuj tylko pierwsze 3 kafelki ścieżki
+                const MAX_PATH_TILES_TO_BLOCK: usize = 3;
+                for &path_tile in movement.path.iter().take(MAX_PATH_TILES_TO_BLOCK) {
+                    occupied_tiles.insert(path_tile);
+                }
+            }
+
+            // KLUCZOWE: Zawsze blokuj kafelek gracza dla wrogów
+            if let Ok(player_tile_pos) = queries.p2().single() {
+                if let Some(player_tile) = player_tile_pos.tile {
+                    occupied_tiles.insert(player_tile);
+                }
+            }
+
+            info!("Enemy pathfinding: {} tiles occupied (positions + paths)", occupied_tiles.len());
+        }
+
+        info!("Pathfinding: {} tiles occupied (including all paths)", occupied_tiles.len());
+
+        // Użyj P1 (mutable)
+        if let Ok((transform, mut player_movement, mut tile_position, mut movement_state)) = queries.p1().get_mut(event.entity) {
             if tile_position.tile.is_none() {
                 tile_position.tile = Some(event.source_tile_entity);
             }
@@ -60,7 +117,12 @@ pub fn movement_request_handler(
             if let Some(tile_entity) = tile_position.tile {
 
                 let paths = match event.movement_type {
-                    MovementType::ASTAR => astar_pathfind(tile_entity, event.target_tile_entity, &tiles),
+                    MovementType::ASTAR => astar_pathfind(
+                        tile_entity,
+                        event.target_tile_entity,
+                        &tiles,
+                        &occupied_tiles  // DIABLO-STYLE: Przekaż zajęte kafelki
+                    ),
                     MovementType::SHORTEST => None
                 };
 
