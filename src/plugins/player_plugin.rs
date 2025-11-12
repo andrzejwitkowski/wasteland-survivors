@@ -23,6 +23,9 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_state::<PlayerLoadingState>()
+            // .add_plugins(ProgressPlugin::<PlayerLoadingState>::new()
+            //                  .with_state_transition(PlayerLoadingState::Loading, PlayerLoadingState::Ready),
+            // )
             .add_loading_state(
                 LoadingState::new(Loading)
                     .continue_to_state(PlayerLoadingState::Ready)

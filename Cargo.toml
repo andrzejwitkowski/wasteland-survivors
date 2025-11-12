@@ -11,10 +11,20 @@ keywords = ["bevy", "gamedev", "wasteland", "survivors"]
 categories = ["game-development", "game-engines"]
 
 [dependencies]
-bevy = { version = "0.17.1", features = ["jpeg", "bevy_asset", "bevy_scene", "bevy_gltf"]}
+bevy = { version = "0.17.2", features = ["jpeg", "bevy_asset", "bevy_scene", "bevy_gltf"]}
 log = "0.4.28"
 rand = "0.9.2"
 bevy_asset_loader = "0.24.0-rc.1"
+skein = "0.1.1"
+bevy_skein = "0.3.0"
+anyhow = "1.0.100"
+serde_json = "1.0.145"
+gltf = "1.4.1"
+bevy_rts_camera = "0.11.1"
+bevy_rerecast = "0.3.0"
+bevy_landmass = "0.10.0"
+landmass_rerecast = "0.1.0"
+#iyes_progress = "0.14.0"
 
 [[bin]]
 name = "wasteland-survivors"

@@ -2,7 +2,8 @@ use std::collections::HashMap;
 
 use bevy::prelude::*;
 
-#[derive(Component, Clone, Copy)]
+#[derive(Component, Clone, Copy, Reflect)]
+#[reflect(Component)]
 pub struct PlaneChunk {
     pub x: i32,
     pub z: i32,
@@ -12,7 +13,8 @@ pub struct PlaneChunk {
     pub grid_size: i32,
 }
 
-#[derive(Component)]
+#[derive(Component, Clone, Copy, Reflect)]
+#[reflect(Component)]
 pub struct Tile {
     pub x: i32,
     pub z: i32,
