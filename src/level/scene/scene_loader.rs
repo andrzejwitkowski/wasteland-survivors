@@ -47,6 +47,8 @@ pub fn on_scene_loaded(
     mut navmesh_gen: NavmeshGenerator,
     mut navres: ResMut<NavRes>,
     mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<StandardMaterial>>,
 ) {
     info!("Scene loaded");
     if let Some(scene) = scenes.get(&level_scene.0) {
@@ -81,6 +83,15 @@ pub fn on_scene_loaded(
             CameraController,
         );
 
+        let player_cuboid = Cuboid::new(2.5, 2.5, 2.5);
+        commands.entity(player_entity).insert((
+            Mesh3d(meshes.add(Mesh::from(player_cuboid))),
+            MeshMaterial3d(materials.add(StandardMaterial {
+                base_color: Color::srgb(1.0, 0.0, 0.0),
+                ..Default::default()
+            }))
+        ));
+
         commands.spawn(camera_entity).insert(Name::new("Main Camera"));
     } else {
         warn!("No player found");
@@ -102,14 +113,14 @@ pub fn on_navmesh_ready(trigger: On<NavmeshReady>, mut commands: Commands, nav_r
             commands.spawn(DetailNavmeshGizmo::new(asset_id));
 
             // spawn landmass island
-            let archipelago_id =
-                commands.spawn(Archipelago3d::new(ArchipelagoOptions::from_agent_radius(0.6))).id();
-
-            commands.spawn(Island3dBundle {
-                nav_mesh: NavMeshHandle3d(h.clone()),
-                archipelago_ref: ArchipelagoRef::new(archipelago_id),
-                island: Island,
-            });
+            // let archipelago_id =
+            //     commands.spawn(Archipelago3d::new(ArchipelagoOptions::from_agent_radius(0.6))).id();
+            //
+            // commands.spawn(Island3dBundle {
+            //     nav_mesh: NavMeshHandle3d(h.clone()),
+            //     archipelago_ref: ArchipelagoRef::new(archipelago_id),
+            //     island: Island,
+            // });
         }
     }
 }
